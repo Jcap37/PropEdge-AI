@@ -46,7 +46,7 @@ export async function GET() {
     const nflTerms =
       /NFL|football|passing|rushing|receiving|Dak Prescott|Tyson Bagent/i;
 
-    const markets = allMarkets.filter((market) => {
+    const markets = allMarkets.slice(0, 50);
       const text = [
         market.title,
         market.subtitle,
