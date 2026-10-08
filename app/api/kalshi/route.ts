@@ -67,4 +67,26 @@ export async function GET() {
         status: market.status ?? "",
         yesBid: market.yes_bid_dollars ?? null,
         yesAsk: market.yes_ask_dollars ?? null,
-        lastPrice:
+        lastPrice:        lastPrice: market.last_price_dollars ?? null,
+        volume: market.volume ?? 0,
+        closeTime: market.close_time ?? null,
+      })),
+
+      updatedAt: new Date().toISOString(),
+    });
+  } catch (error) {
+    return NextResponse.json(
+      {
+        success: false,
+        source: "Kalshi",
+        count: 0,
+        markets: [],
+        error:
+          error instanceof Error
+            ? error.message
+            : "Unable to retrieve Kalshi markets",
+      },
+      { status: 500 }
+    );
+  }
+}
