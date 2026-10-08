@@ -4,9 +4,10 @@ export const dynamic = "force-dynamic";
 
 type Market = {
   id: string;
-  question: string;
-  outcomes: string | string[];
-  outcomePrices: string | string[];
+  question?: string;
+  groupItemTitle?: string;
+  outcomes?: string | string[];
+  outcomePrices?: string | string[];
   volume?: string | number;
   liquidity?: string | number;
   active?: boolean;
@@ -15,70 +16,72 @@ type Market = {
 
 type Event = {
   title?: string;
+  slug?: string;
+  endDate?: string;
   markets?: Market[];
 };
 
-const propKeywords =
-  /passing yards|rushing yards|receiving yards|receptions|passing touchdowns|rushing touchdowns|receiving touchdowns|interceptions|anytime touchdown|touchdown scorer/i;
+const playerPropTerms =
+  /\b(passing yards|rushing yards|receiving yards|receptions|completions|passing touchdowns|rushing touchdowns|receiving touchdowns|anytime touchdown|touchdown scorer|interceptions|player props?)\b/i;
+
+const seasonLongTerms =
+  /\b(season|regular season|single.season|2026.2027|mvp|super bowl|playoffs|award|record)\b/i;
 
 export async function GET() {
   try {
-    const searches = [
-      "NFL passing yards",
-      "NFL rushing yards",
-      "NFL receiving yards",
-      "NFL touchdown",
-    ];
+    const url = new URL(
+      "https://gamma-api.polymarket.com/events"
+    );
 
-    const results = await Promise.all(
-      searches.map(async (query) => {
-        const url = new URL(
-          "https://gamma-api.polymarket.com/public-search"
-        );
+    url.searchParams.set("tag_slug", "nfl");
+    url.searchParams.set("active", "true");
+    url.searchParams.set("closed", "false");
+    url.searchParams.set("limit", "100");
 
-        url.searchParams.set("q", query);
-        url.searchParams.set("limit_per_type", "20");
-        url.searchParams.set("events_status", "active");
+    const response = await fetch(url, {
+      cache: "no-store",
+    });
 
-        const response = await fetch(url, {
-          cache: "no-store",
-        });
+    if (!response.ok) {
+      throw new Error(
+        `Polymarket returned ${response.status}`
+      );
+    }
 
-        if (!response.ok) {
-          throw new Error(
-            `Polymarket returned ${response.status}`
+    const events = (await response.json()) as Event[];
+
+    const markets = events.flatMap((event) => {
+      const eventTitle = event.title ?? "";
+
+      // Exclude season-long prediction events.
+      if (seasonLongTerms.test(eventTitle)) {
+        return [];
+      }
+
+      return (event.markets ?? [])
+        .filter((market) => {
+          const question = market.question ?? "";
+          const label = market.groupItemTitle ?? "";
+
+          const marketText = `${question} ${label}`;
+
+          return (
+            market.active !== false &&
+            market.closed !== true &&
+            playerPropTerms.test(marketText) &&
+            !seasonLongTerms.test(marketText)
           );
-        }
-
-        return response.json();
-      })
-    );
-
-    const markets = results.flatMap((result) =>
-      ((result.events ?? []) as Event[]).flatMap(
-        (event) =>
-          (event.markets ?? [])
-            .filter((market) => {
-              const text =
-                `${event.title ?? ""} ${market.question}`;
-
-              return (
-                propKeywords.test(text) &&
-                market.active !== false &&
-                market.closed !== true
-              );
-            })
-            .map((market) => ({
-              id: market.id,
-              event: event.title,
-              question: market.question,
-              outcomes: market.outcomes,
-              outcomePrices: market.outcomePrices,
-              volume: market.volume,
-              liquidity: market.liquidity,
-            }))
-      )
-    );
+        })
+        .map((market) => ({
+          id: market.id,
+          event: eventTitle,
+          question: market.question ?? "",
+          outcomes: market.outcomes ?? "[]",
+          outcomePrices: market.outcomePrices ?? "[]",
+          volume: market.volume ?? 0,
+          liquidity: market.liquidity ?? 0,
+        }));
+    });
 
     const uniqueMarkets = Array.from(
       new Map(
