@@ -67,7 +67,7 @@ export async function GET() {
         status: market.status ?? "",
         yesBid: market.yes_bid_dollars ?? null,
         yesAsk: market.yes_ask_dollars ?? null,
-        lastPrice:        lastPrice: market.last_price_dollars ?? null,
+       lastPrice: market.last_price_dollars ?? null,
         volume: market.volume ?? 0,
         closeTime: market.close_time ?? null,
       })),
