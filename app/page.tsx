@@ -42,7 +42,7 @@ export default function Home() {
     setError("");
 
     try {
-      const response = await fetch("/api/markets", {
+      const response = await fetch("/api/kalshi", {
         cache: "no-store",
       });
 
