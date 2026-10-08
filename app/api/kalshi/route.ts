@@ -34,8 +34,8 @@ type MarketsResponse = {
   cursor?: string;
 };
 
-type EventsResponse = {
-  events?: KalshiEvent[];
+type EventResponse = {
+  event?: KalshiEvent;
 };
 
 async function getJSON<T>(url: string): Promise<T> {
@@ -57,7 +57,7 @@ async function getJSON<T>(url: string): Promise<T> {
 
 export async function GET() {
   try {
-    // Step 1: Retrieve open Kalshi markets.
+    // Step 1: Retrieve 100 open Kalshi markets.
     const marketsURL = new URL(
       `${BASE_URL}/markets`
     );
@@ -71,35 +71,45 @@ export async function GET() {
 
     const allMarkets = marketData.markets ?? [];
 
-    // Step 2: Find the unique events these markets belong to.
+    // Step 2: Collect unique event tickers.
     const eventTickers = Array.from(
       new Set(
         allMarkets
           .map((market) => market.event_ticker)
-          .filter((ticker): ticker is string => Boolean(ticker))
+          .filter(
+            (ticker): ticker is string =>
+              Boolean(ticker)
+          )
       )
     );
 
-    // Step 3: Fetch event details in parallel.
-    const data = await getJSON<{
-  event?: KalshiEvent;
-}>(
-  `${BASE_URL}/events/${encodeURIComponent(ticker)}`
-);
+    // Step 3: Fetch individual event details.
+    const eventResults = await Promise.allSettled(
+      eventTickers.map(async (ticker) => {
+        const data = await getJSON<EventResponse>(
+          `${BASE_URL}/events/${encodeURIComponent(ticker)}`
+        );
 
-return data.event ?? null;
+        return data.event ?? null;
       })
     );
 
+    // Step 4: Build an event lookup map.
     const eventMap = new Map<string, KalshiEvent>();
 
     eventResults.forEach((result) => {
-      if (result.status === "fulfilled" && result.value) {
-        eventMap.set(result.value.event_ticker, result.value);
+      if (
+        result.status === "fulfilled" &&
+        result.value
+      ) {
+        eventMap.set(
+          result.value.event_ticker,
+          result.value
+        );
       }
     });
 
-    // Step 4: Combine market and event information.
+    // Step 5: Combine markets with their event details.
     const markets = allMarkets.map((market) => {
       const event = market.event_ticker
         ? eventMap.get(market.event_ticker)
@@ -126,6 +136,7 @@ return data.event ?? null;
       };
     });
 
+    // Step 6: Return the combined data.
     return NextResponse.json({
       success: true,
       source: "Kalshi",
