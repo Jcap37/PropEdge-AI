@@ -1,34 +1,38 @@
+
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 type Market = {
   id: string;
-  event?: string;
+  ticker: string;
+  title: string;
   question: string;
-  outcomes: string | string[];
-  outcomePrices: string | string[];
-  volume?: string | number;
-  liquidity?: string | number;
+  subtitle?: string;
+  yesBid?: string | null;
+  yesAsk?: string | null;
+  lastPrice?: string | null;
+  volume?: number;
+  closeTime?: string | null;
 };
 
 type ApiResponse = {
   success: boolean;
+  source?: string;
   count?: number;
   markets?: Market[];
-  error?: string;
   updatedAt?: string;
+  error?: string;
 };
 
-function parseArray(value: string | string[]): string[] {
-  if (Array.isArray(value)) return value;
+function formatPrice(value?: string | null) {
+  if (value == null || value === "") return "—";
 
-  try {
-    const parsed = JSON.parse(value);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
+  const number = Number(value);
+
+  if (!Number.isFinite(number)) return "—";
+
+  return `${(number * 100).toFixed(1)}¢`;
 }
 
 export default function Home() {
@@ -37,7 +41,7 @@ export default function Home() {
   const [error, setError] = useState("");
   const [updatedAt, setUpdatedAt] = useState("");
 
-  async function loadMarkets() {
+  const loadMarkets = useCallback(async () => {
     setLoading(true);
     setError("");
 
@@ -49,11 +53,11 @@ export default function Home() {
       const data: ApiResponse = await response.json();
 
       if (!response.ok || !data.success) {
-        throw new Error(data.error || "Unable to load markets");
+        throw new Error(data.error || "Unable to load Kalshi markets");
       }
 
-      setMarkets(data.markets || []);
-      setUpdatedAt(data.updatedAt || "");
+      setMarkets(data.markets ?? []);
+      setUpdatedAt(data.updatedAt ?? "");
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Something went wrong"
@@ -61,11 +65,26 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
 
   useEffect(() => {
-    loadMarkets();
-  }, []);
+    void loadMarkets();
+  }, [loadMarkets]);
+
+  const cardStyle = {
+    background: "#172033",
+    border: "1px solid #29354d",
+    borderRadius: "12px",
+    padding: "22px",
+    flex: "1 1 200px",
+  };
+
+  const cellStyle = {
+    padding: "14px",
+    borderBottom: "1px solid #29354d",
+    textAlign: "left" as const,
+    fontSize: "14px",
+  };
 
   return (
     <main
@@ -74,24 +93,23 @@ export default function Home() {
         background: "#090e1b",
         color: "#f8fafc",
         fontFamily: "Arial, sans-serif",
-        padding: "32px",
+        padding: "30px",
       }}
     >
-      <header style={{ marginBottom: "32px" }}>
+      <header style={{ marginBottom: "30px" }}>
         <h1 style={{ fontSize: "36px", marginBottom: "8px" }}>
           PropEdge AI
         </h1>
-
         <p style={{ color: "#94a3b8" }}>
-          Sports prediction market analytics
+          Live sports prediction market analytics
         </p>
       </header>
 
       <div
         style={{
           display: "flex",
-          gap: "12px",
           flexWrap: "wrap",
+          gap: "12px",
           marginBottom: "28px",
         }}
       >
@@ -101,7 +119,7 @@ export default function Home() {
               key={sport}
               style={{
                 background: "#172033",
-                padding: "12px 20px",
+                padding: "12px 18px",
                 borderRadius: "8px",
               }}
             >
@@ -114,24 +132,24 @@ export default function Home() {
       <section
         style={{
           display: "flex",
-          gap: "16px",
           flexWrap: "wrap",
-          marginBottom: "32px",
+          gap: "16px",
+          marginBottom: "30px",
         }}
       >
         <div style={cardStyle}>
-          <p style={labelStyle}>Markets Found</p>
+          <p style={{ color: "#94a3b8" }}>Markets Loaded</p>
           <h2>{loading ? "Loading..." : markets.length}</h2>
         </div>
 
         <div style={cardStyle}>
-          <p style={labelStyle}>Data Source</p>
-          <h2>Polymarket</h2>
+          <p style={{ color: "#94a3b8" }}>Market Source</p>
+          <h2>Kalshi</h2>
         </div>
 
         <div style={cardStyle}>
-          <p style={labelStyle}>Positive EV Props</p>
-          <h2>Not Calculated</h2>
+          <p style={{ color: "#94a3b8" }}>Model-Verified Props</p>
+          <h2>Not Available Yet</h2>
         </div>
       </section>
 
@@ -140,7 +158,6 @@ export default function Home() {
           background: "#111827",
           borderRadius: "12px",
           padding: "24px",
-          overflowX: "auto",
         }}
       >
         <div
@@ -148,21 +165,21 @@ export default function Home() {
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
+            flexWrap: "wrap",
             gap: "16px",
             marginBottom: "20px",
-            flexWrap: "wrap",
           }}
         >
-          <h2>Live NFL Player Prop Markets</h2>
+          <h2 style={{ margin: 0 }}>Kalshi Live Markets</h2>
 
           <button
-            onClick={loadMarkets}
+            onClick={() => void loadMarkets()}
             disabled={loading}
             style={{
               background: "#2563eb",
               color: "white",
               border: "none",
-              padding: "10px 18px",
+              padding: "11px 18px",
               borderRadius: "8px",
               cursor: loading ? "wait" : "pointer",
             }}
@@ -179,81 +196,82 @@ export default function Home() {
 
         {!loading && !error && markets.length === 0 && (
           <p style={{ color: "#94a3b8" }}>
-            No matching markets were found.
+            No markets were returned by Kalshi.
           </p>
         )}
 
         {markets.length > 0 && (
-          <table
-            style={{
-              width: "100%",
-              borderCollapse: "collapse",
-              textAlign: "left",
-              minWidth: "700px",
-            }}
-          >
-            <thead>
-              <tr>
-                {[
-                  "Market",
-                  "Outcomes",
-                  "Prices",
-                  "Volume",
-                  "Source",
-                ].map((heading) => (
-                  <th key={heading} style={cellStyle}>
-                    {heading}
-                  </th>
-                ))}
-              </tr>
-            </thead>
+          <div style={{ overflowX: "auto" }}>
+            <table
+              style={{
+                width: "100%",
+                minWidth: "800px",
+                borderCollapse: "collapse",
+              }}
+            >
+              <thead>
+                <tr>
+                  {[
+                    "Market",
+                    "Yes Bid",
+                    "Yes Ask",
+                    "Last Price",
+                    "Volume",
+                    "Closes",
+                  ].map((heading) => (
+                    <th key={heading} style={cellStyle}>
+                      {heading}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
 
-            <tbody>
-              {markets.map((market) => {
-                const outcomes = parseArray(market.outcomes);
-                const prices = parseArray(market.outcomePrices);
-
-                return (
+              <tbody>
+                {markets.map((market) => (
                   <tr key={market.id}>
                     <td style={cellStyle}>
-                      {market.question}
+                      <strong>{market.title}</strong>
+                      {market.subtitle && (
+                        <p style={{ color: "#94a3b8" }}>
+                          {market.subtitle}
+                        </p>
+                      )}
                     </td>
 
                     <td style={cellStyle}>
-                      {outcomes.join(" / ")}
+                      {formatPrice(market.yesBid)}
                     </td>
 
                     <td style={cellStyle}>
-                      {prices
-                        .map((price) => {
-                          const value = Number(price);
-                          return Number.isFinite(value)
-                            ? `${(value * 100).toFixed(1)}%`
-                            : price;
-                        })
-                        .join(" / ")}
+                      {formatPrice(market.yesAsk)}
                     </td>
 
                     <td style={cellStyle}>
-                      {Number(market.volume || 0).toLocaleString()}
+                      {formatPrice(market.lastPrice)}
                     </td>
 
                     <td style={cellStyle}>
-                      Polymarket
+                      {(market.volume ?? 0).toLocaleString()}
+                    </td>
+
+                    <td style={cellStyle}>
+                      {market.closeTime
+                        ? new Date(market.closeTime).toLocaleString()
+                        : "—"}
                     </td>
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
 
         {updatedAt && (
           <p
             style={{
-              color: "#64748b",
-              fontSize: "12px",
               marginTop: "20px",
+              fontSize: "12px",
+              color: "#64748b",
             }}
           >
             Last fetched: {new Date(updatedAt).toLocaleString()}
@@ -263,38 +281,30 @@ export default function Home() {
 
       <section
         style={{
-          marginTop: "28px",
-          padding: "24px",
           background: "#111827",
           borderRadius: "12px",
+          padding: "24px",
+          marginTop: "24px",
         }}
       >
-        <h2>AI Prop Analyst</h2>
-
+        <h2>AI Player Prop Analyst</h2>
         <p style={{ color: "#94a3b8", lineHeight: "1.7" }}>
-          Coming next: historical player statistics, matchup analysis,
-          model probabilities, expected value calculations, and
-          AI-generated explanations.
+          Coming next: NFL player prop filtering, historical
+          performance, matchup analysis, injuries, estimated
+          probabilities, and expected value rankings.
         </p>
       </section>
+
+      <footer
+        style={{
+          textAlign: "center",
+          marginTop: "35px",
+          color: "#64748b",
+          fontSize: "13px",
+        }}
+      >
+        PropEdge AI — Analytics only. No automated wagering.
+      </footer>
     </main>
   );
 }
-
-const cardStyle = {
-  background: "#172033",
-  padding: "24px",
-  borderRadius: "12px",
-  flex: "1 1 200px",
-};
-
-const labelStyle = {
-  color: "#94a3b8",
-  fontSize: "14px",
-};
-
-const cellStyle = {
-  padding: "14px",
-  borderBottom: "1px solid #263247",
-  fontSize: "14px",
-};
