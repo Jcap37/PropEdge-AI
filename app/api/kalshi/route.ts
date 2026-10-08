@@ -65,6 +65,11 @@ export async function GET() {
       success: true,
       source: "Kalshi",
       sport: "NFL",
+      sampleMarkets: allMarkets.slice(0, 10).map((market) => ({
+  ticker: market.ticker,
+  title: market.title,
+  subtitle: market.subtitle,
+})),
       count: markets.length,
       scanned: allMarkets.length,
       nextPageAvailable: Boolean(data.cursor),
