@@ -81,13 +81,13 @@ export async function GET() {
     );
 
     // Step 3: Fetch event details in parallel.
-    const eventResults = await Promise.allSettled(
-      eventTickers.map(async (ticker) => {
-        const data = await getJSON<EventsResponse>(
-          `${BASE_URL}/events?event_ticker=${encodeURIComponent(ticker)}`
-        );
+    const data = await getJSON<{
+  event?: KalshiEvent;
+}>(
+  `${BASE_URL}/events/${encodeURIComponent(ticker)}`
+);
 
-        return data.events?.[0] ?? null;
+return data.event ?? null;
       })
     );
 
