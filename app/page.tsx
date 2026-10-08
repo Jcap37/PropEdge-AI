@@ -1,36 +1,89 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+
+type Market = {
+  id: string;
+  event?: string;
+  question: string;
+  outcomes: string | string[];
+  outcomePrices: string | string[];
+  volume?: string | number;
+  liquidity?: string | number;
+};
+
+type ApiResponse = {
+  success: boolean;
+  count?: number;
+  markets?: Market[];
+  error?: string;
+  updatedAt?: string;
+};
+
+function parseArray(value: string | string[]): string[] {
+  if (Array.isArray(value)) return value;
+
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
 
 export default function Home() {
-  const [sport, setSport] = useState("NFL");
+  const [markets, setMarkets] = useState<Market[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [updatedAt, setUpdatedAt] = useState("");
 
-  const sports = ["NFL", "NBA", "College Football"];
+  async function loadMarkets() {
+    setLoading(true);
+    setError("");
 
-  const cardStyle = {
-    background: "#161b2e",
-    padding: "24px",
-    borderRadius: "12px",
-    border: "1px solid #293047",
-  };
+    try {
+      const response = await fetch("/api/markets", {
+        cache: "no-store",
+      });
+
+      const data: ApiResponse = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || "Unable to load markets");
+      }
+
+      setMarkets(data.markets || []);
+      setUpdatedAt(data.updatedAt || "");
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Something went wrong"
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    loadMarkets();
+  }, []);
 
   return (
     <main
       style={{
         minHeight: "100vh",
-        background: "#0b1020",
-        color: "white",
+        background: "#090e1b",
+        color: "#f8fafc",
         fontFamily: "Arial, sans-serif",
         padding: "32px",
       }}
     >
-      <header style={{ marginBottom: "40px" }}>
+      <header style={{ marginBottom: "32px" }}>
         <h1 style={{ fontSize: "36px", marginBottom: "8px" }}>
           PropEdge AI
         </h1>
 
-        <p style={{ color: "#9ca3af" }}>
-          AI-Powered Sports Prediction Market Analytics
+        <p style={{ color: "#94a3b8" }}>
+          Sports prediction market analytics
         </p>
       </header>
 
@@ -38,100 +91,117 @@ export default function Home() {
         style={{
           display: "flex",
           gap: "12px",
-          marginBottom: "32px",
           flexWrap: "wrap",
+          marginBottom: "28px",
         }}
       >
-        {sports.map((item) => (
-          <button
-            key={item}
-            onClick={() => setSport(item)}
-            style={{
-              padding: "12px 24px",
-              borderRadius: "8px",
-              border: "none",
-              cursor: "pointer",
-              background:
-                sport === item ? "#2563eb" : "#1e293b",
-              color: "white",
-              fontWeight: "bold",
-            }}
-          >
-            {item}
-          </button>
-        ))}
+        {["NFL", "NBA — Coming Soon", "College Football — Coming Soon"].map(
+          (sport) => (
+            <span
+              key={sport}
+              style={{
+                background: "#172033",
+                padding: "12px 20px",
+                borderRadius: "8px",
+              }}
+            >
+              {sport}
+            </span>
+          )
+        )}
       </div>
 
       <section
         style={{
-          display: "grid",
-          gridTemplateColumns:
-            "repeat(auto-fit, minmax(240px, 1fr))",
-          gap: "20px",
+          display: "flex",
+          gap: "16px",
+          flexWrap: "wrap",
           marginBottom: "32px",
         }}
       >
         <div style={cardStyle}>
-          <h3>Markets Tracked</h3>
-          <h2>Not Connected</h2>
-          <p style={{ color: "#9ca3af" }}>
-            Awaiting live market integration
-          </p>
+          <p style={labelStyle}>Markets Found</p>
+          <h2>{loading ? "Loading..." : markets.length}</h2>
         </div>
 
         <div style={cardStyle}>
-          <h3>Positive EV Props</h3>
-          <h2>Not Available</h2>
-          <p style={{ color: "#9ca3af" }}>
-            Prediction model not connected
-          </p>
+          <p style={labelStyle}>Data Source</p>
+          <h2>Polymarket</h2>
         </div>
 
         <div style={cardStyle}>
-          <h3>Sportsbook Sources</h3>
-          <h2>Kalshi + Polymarket</h2>
-          <p style={{ color: "#9ca3af" }}>
-            Public API integration planned
-          </p>
+          <p style={labelStyle}>Positive EV Props</p>
+          <h2>Not Calculated</h2>
         </div>
       </section>
 
-      <section style={cardStyle}>
-        <h2>Top {sport} Player Props</h2>
-
-        <p style={{ color: "#9ca3af" }}>
-          Live player prop recommendations will appear here
-          once market data and statistical models are connected.
-        </p>
-
+      <section
+        style={{
+          background: "#111827",
+          borderRadius: "12px",
+          padding: "24px",
+          overflowX: "auto",
+        }}
+      >
         <div
           style={{
-            overflowX: "auto",
-            marginTop: "24px",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: "16px",
+            marginBottom: "20px",
+            flexWrap: "wrap",
           }}
         >
+          <h2>Live NFL Player Prop Markets</h2>
+
+          <button
+            onClick={loadMarkets}
+            disabled={loading}
+            style={{
+              background: "#2563eb",
+              color: "white",
+              border: "none",
+              padding: "10px 18px",
+              borderRadius: "8px",
+              cursor: loading ? "wait" : "pointer",
+            }}
+          >
+            {loading ? "Loading..." : "Refresh Markets"}
+          </button>
+        </div>
+
+        {error && (
+          <p style={{ color: "#f87171" }}>
+            Error: {error}
+          </p>
+        )}
+
+        {!loading && !error && markets.length === 0 && (
+          <p style={{ color: "#94a3b8" }}>
+            No matching markets were found.
+          </p>
+        )}
+
+        {markets.length > 0 && (
           <table
             style={{
               width: "100%",
               borderCollapse: "collapse",
               textAlign: "left",
-              minWidth: "650px",
+              minWidth: "700px",
             }}
           >
             <thead>
-              <tr style={{ borderBottom: "1px solid #374151" }}>
+              <tr>
                 {[
-                  "Player",
-                  "Prop",
                   "Market",
-                  "Price",
-                  "Model Probability",
-                  "Expected Value",
+                  "Outcomes",
+                  "Prices",
+                  "Volume",
+                  "Source",
                 ].map((heading) => (
-                  <th
-                    key={heading}
-                    style={{ padding: "14px" }}
-                  >
+                  <th key={heading} style={cellStyle}>
                     {heading}
                   </th>
                 ))}
@@ -139,48 +209,92 @@ export default function Home() {
             </thead>
 
             <tbody>
-              <tr>
-                <td
-                  colSpan={6}
-                  style={{
-                    textAlign: "center",
-                    padding: "32px",
-                    color: "#9ca3af",
-                  }}
-                >
-                  No live market data connected yet.
-                </td>
-              </tr>
+              {markets.map((market) => {
+                const outcomes = parseArray(market.outcomes);
+                const prices = parseArray(market.outcomePrices);
+
+                return (
+                  <tr key={market.id}>
+                    <td style={cellStyle}>
+                      {market.question}
+                    </td>
+
+                    <td style={cellStyle}>
+                      {outcomes.join(" / ")}
+                    </td>
+
+                    <td style={cellStyle}>
+                      {prices
+                        .map((price) => {
+                          const value = Number(price);
+                          return Number.isFinite(value)
+                            ? `${(value * 100).toFixed(1)}%`
+                            : price;
+                        })
+                        .join(" / ")}
+                    </td>
+
+                    <td style={cellStyle}>
+                      {Number(market.volume || 0).toLocaleString()}
+                    </td>
+
+                    <td style={cellStyle}>
+                      Polymarket
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
-        </div>
+        )}
+
+        {updatedAt && (
+          <p
+            style={{
+              color: "#64748b",
+              fontSize: "12px",
+              marginTop: "20px",
+            }}
+          >
+            Last fetched: {new Date(updatedAt).toLocaleString()}
+          </p>
+        )}
       </section>
 
       <section
         style={{
-          ...cardStyle,
-          marginTop: "24px",
+          marginTop: "28px",
+          padding: "24px",
+          background: "#111827",
+          borderRadius: "12px",
         }}
       >
         <h2>AI Prop Analyst</h2>
 
-        <p style={{ color: "#9ca3af" }}>
-          Coming next: player performance analysis,
-          matchup intelligence, injury reports,
-          and probability-based recommendations.
+        <p style={{ color: "#94a3b8", lineHeight: "1.7" }}>
+          Coming next: historical player statistics, matchup analysis,
+          model probabilities, expected value calculations, and
+          AI-generated explanations.
         </p>
       </section>
-
-      <footer
-        style={{
-          marginTop: "40px",
-          textAlign: "center",
-          color: "#64748b",
-        }}
-      >
-        PropEdge AI | Sports Analytics Dashboard
-        <p>Analysis only. No automated wagering.</p>
-      </footer>
     </main>
   );
 }
+
+const cardStyle = {
+  background: "#172033",
+  padding: "24px",
+  borderRadius: "12px",
+  flex: "1 1 200px",
+};
+
+const labelStyle = {
+  color: "#94a3b8",
+  fontSize: "14px",
+};
+
+const cellStyle = {
+  padding: "14px",
+  borderBottom: "1px solid #263247",
+  fontSize: "14px",
+};
