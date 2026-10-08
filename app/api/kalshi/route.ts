@@ -6,6 +6,8 @@ type KalshiMarket = {
   ticker: string;
   title: string;
   subtitle?: string;
+  yes_sub_title?: string;
+  no_sub_title?: string;
   status?: string;
   yes_bid_dollars?: string;
   yes_ask_dollars?: string;
@@ -17,7 +19,7 @@ type KalshiMarket = {
 export async function GET() {
   try {
     const url =
-      "https://api.elections.kalshi.com/trade-api/v2/markets?limit=100&status=open";
+      "https://api.elections.kalshi.com/trade-api/v2/markets?limit=1000&status=open";
 
     const response = await fetch(url, {
       cache: "no-store",
@@ -34,17 +36,42 @@ export async function GET() {
 
     const data = await response.json();
 
-    const markets: KalshiMarket[] = data.markets ?? [];
+    const allMarkets: KalshiMarket[] =
+      data.markets ?? [];
+
+    // Preliminary filter for NFL player statistics.
+    const playerPropTerms =
+      /passing|rushing|receiving|receptions|touchdown|interceptions|completions|pass yards|rush yards|rec yards/i;
+
+    const nflTerms =
+      /NFL|football|passing|rushing|receiving|Dak Prescott|Tyson Bagent/i;
+
+    const markets = allMarkets.filter((market) => {
+      const text = [
+        market.title,
+        market.subtitle,
+        market.yes_sub_title,
+        market.no_sub_title,
+        market.ticker,
+      ].join(" ");
+
+      return (
+        playerPropTerms.test(text) &&
+        nflTerms.test(text)
+      );
+    });
 
     return NextResponse.json({
       success: true,
       source: "Kalshi",
+      sport: "NFL",
       count: markets.length,
+      scanned: allMarkets.length,
+      nextPageAvailable: Boolean(data.cursor),
       markets: markets.map((market) => ({
         ticker: market.ticker,
         title: market.title,
         subtitle: market.subtitle,
-        status: market.status,
         yesBid: market.yes_bid_dollars,
         yesAsk: market.yes_ask_dollars,
         lastPrice: market.last_price_dollars,
