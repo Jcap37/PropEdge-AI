@@ -16,12 +16,21 @@ type KalshiMarket = {
   close_time?: string;
 };
 
+type KalshiResponse = {
+  markets?: KalshiMarket[];
+  cursor?: string;
+};
+
 export async function GET() {
   try {
-    const url =
-      "https://api.elections.kalshi.com/trade-api/v2/markets?limit=1000&status=open";
+    const url = new URL(
+      "https://api.elections.kalshi.com/trade-api/v2/markets"
+    );
 
-    const response = await fetch(url, {
+    url.searchParams.set("limit", "100");
+    url.searchParams.set("status", "open");
+
+    const response = await fetch(url.toString(), {
       cache: "no-store",
       headers: {
         Accept: "application/json",
@@ -30,71 +39,32 @@ export async function GET() {
 
     if (!response.ok) {
       throw new Error(
-        `Kalshi API returned ${response.status}`
+        `Kalshi API returned status ${response.status}`
       );
     }
 
-    const data = await response.json();
+    const data: KalshiResponse = await response.json();
 
-    const allMarkets: KalshiMarket[] =
-      data.markets ?? [];
+    const allMarkets = data.markets ?? [];
 
-    // Preliminary filter for NFL player statistics.
-    const playerPropTerms =
-      /passing|rushing|receiving|receptions|touchdown|interceptions|completions|pass yards|rush yards|rec yards/i;
-
-    const nflTerms =
-      /NFL|football|passing|rushing|receiving|Dak Prescott|Tyson Bagent/i;
-
+    // Temporary test: return the first 50 markets.
+    // We will add NFL-specific filtering afterward.
     const markets = allMarkets.slice(0, 50);
-      const text = [
-        market.title,
-        market.subtitle,
-        market.yes_sub_title,
-        market.no_sub_title,
-        market.ticker,
-      ].join(" ");
-
-      return (
-        playerPropTerms.test(text) &&
-        nflTerms.test(text)
-      );
-    });
 
     return NextResponse.json({
       success: true,
       source: "Kalshi",
-      sport: "NFL",
-      sampleMarkets: allMarkets.slice(0, 10).map((market) => ({
-  ticker: market.ticker,
-  title: market.title,
-  subtitle: market.subtitle,
-})),
       count: markets.length,
       scanned: allMarkets.length,
       nextPageAvailable: Boolean(data.cursor),
+
       markets: markets.map((market) => ({
+        id: market.ticker,
         ticker: market.ticker,
         title: market.title,
-        subtitle: market.subtitle,
-        yesBid: market.yes_bid_dollars,
-        yesAsk: market.yes_ask_dollars,
-        lastPrice: market.last_price_dollars,
-        volume: market.volume,
-        closeTime: market.close_time,
-      })),
-      updatedAt: new Date().toISOString(),
-    });
-  } catch (error) {
-    return NextResponse.json(
-      {
-        success: false,
-        error:
-          error instanceof Error
-            ? error.message
-            : "Unable to retrieve Kalshi markets",
-      },
-      { status: 500 }
-    );
-  }
-}
+        question: market.title,
+        subtitle: market.subtitle ?? "",
+        status: market.status ?? "",
+        yesBid: market.yes_bid_dollars ?? null,
+        yesAsk: market.yes_ask_dollars ?? null,
+        lastPrice:
