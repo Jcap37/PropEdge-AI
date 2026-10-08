@@ -184,7 +184,6 @@ export default function Home() {
         )}
 
         {markets.length > 0 && (
-        <p>Showing {markets.length} markets</p>
           <table
             style={{
               width: "100%",
