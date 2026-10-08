@@ -1,9 +1,14 @@
+
 import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
+const BASE_URL =
+  "https://api.elections.kalshi.com/trade-api/v2";
+
 type KalshiMarket = {
   ticker: string;
+  event_ticker?: string;
   title: string;
   subtitle?: string;
   yes_sub_title?: string;
@@ -16,62 +21,118 @@ type KalshiMarket = {
   close_time?: string;
 };
 
-type KalshiResponse = {
+type KalshiEvent = {
+  event_ticker: string;
+  title?: string;
+  subtitle?: string;
+  series_ticker?: string;
+  category?: string;
+};
+
+type MarketsResponse = {
   markets?: KalshiMarket[];
   cursor?: string;
 };
 
+type EventsResponse = {
+  events?: KalshiEvent[];
+};
+
+async function getJSON<T>(url: string): Promise<T> {
+  const response = await fetch(url, {
+    cache: "no-store",
+    headers: {
+      Accept: "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      `Kalshi API returned ${response.status}`
+    );
+  }
+
+  return (await response.json()) as T;
+}
+
 export async function GET() {
   try {
-    const url = new URL(
-      "https://api.elections.kalshi.com/trade-api/v2/markets"
+    // Step 1: Retrieve open Kalshi markets.
+    const marketsURL = new URL(
+      `${BASE_URL}/markets`
     );
 
-    url.searchParams.set("limit", "100");
-    url.searchParams.set("status", "open");
+    marketsURL.searchParams.set("limit", "100");
+    marketsURL.searchParams.set("status", "open");
 
-    const response = await fetch(url.toString(), {
-      cache: "no-store",
-      headers: {
-        Accept: "application/json",
-      },
+    const marketData = await getJSON<MarketsResponse>(
+      marketsURL.toString()
+    );
+
+    const allMarkets = marketData.markets ?? [];
+
+    // Step 2: Find the unique events these markets belong to.
+    const eventTickers = Array.from(
+      new Set(
+        allMarkets
+          .map((market) => market.event_ticker)
+          .filter((ticker): ticker is string => Boolean(ticker))
+      )
+    );
+
+    // Step 3: Fetch event details in parallel.
+    const eventResults = await Promise.allSettled(
+      eventTickers.map(async (ticker) => {
+        const data = await getJSON<EventsResponse>(
+          `${BASE_URL}/events?event_ticker=${encodeURIComponent(ticker)}`
+        );
+
+        return data.events?.[0] ?? null;
+      })
+    );
+
+    const eventMap = new Map<string, KalshiEvent>();
+
+    eventResults.forEach((result) => {
+      if (result.status === "fulfilled" && result.value) {
+        eventMap.set(result.value.event_ticker, result.value);
+      }
     });
 
-    if (!response.ok) {
-      throw new Error(
-        `Kalshi API returned status ${response.status}`
-      );
-    }
+    // Step 4: Combine market and event information.
+    const markets = allMarkets.map((market) => {
+      const event = market.event_ticker
+        ? eventMap.get(market.event_ticker)
+        : undefined;
 
-    const data: KalshiResponse = await response.json();
-
-    const allMarkets = data.markets ?? [];
-
-    // Temporary test: return the first 50 markets.
-    // We will add NFL-specific filtering afterward.
-    const markets = allMarkets.slice(0, 50);
+      return {
+        id: market.ticker,
+        ticker: market.ticker,
+        eventTicker: market.event_ticker ?? null,
+        title: market.title,
+        question: market.title,
+        subtitle: market.subtitle ?? "",
+        yesSubtitle: market.yes_sub_title ?? "",
+        noSubtitle: market.no_sub_title ?? "",
+        eventTitle: event?.title ?? null,
+        eventSubtitle: event?.subtitle ?? null,
+        seriesTicker: event?.series_ticker ?? null,
+        category: event?.category ?? null,
+        yesBid: market.yes_bid_dollars ?? null,
+        yesAsk: market.yes_ask_dollars ?? null,
+        lastPrice: market.last_price_dollars ?? null,
+        volume: market.volume ?? 0,
+        closeTime: market.close_time ?? null,
+      };
+    });
 
     return NextResponse.json({
       success: true,
       source: "Kalshi",
       count: markets.length,
-      scanned: allMarkets.length,
-      nextPageAvailable: Boolean(data.cursor),
-
-      markets: markets.map((market) => ({
-        id: market.ticker,
-        ticker: market.ticker,
-        title: market.title,
-        question: market.title,
-        subtitle: market.subtitle ?? "",
-        status: market.status ?? "",
-        yesBid: market.yes_bid_dollars ?? null,
-        yesAsk: market.yes_ask_dollars ?? null,
-       lastPrice: market.last_price_dollars ?? null,
-        volume: market.volume ?? 0,
-        closeTime: market.close_time ?? null,
-      })),
-
+      eventsFound: eventMap.size,
+      nextPageAvailable: Boolean(marketData.cursor),
+      markets,
       updatedAt: new Date().toISOString(),
     });
   } catch (error) {
