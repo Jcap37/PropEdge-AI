@@ -223,7 +223,116 @@ type Candidate = {
   defensiveRankingAdjustment: number;
   defensiveComparison: string;
   opportunityVerified: boolean;
+  headToHead: HeadToHeadGame[];
 };
+
+// Actual player-vs-opponent NFL weekly results, not opposing position averages.
+type HeadToHeadGame = {
+  season: number;
+  week: number;
+  opponent: string;
+  passingYards: number;
+  rushingYards: number;
+  receivingYards: number;
+  receptions: number;
+};
+
+function csvRows(text: string): string[][] {
+  const rows: string[][] = [];
+  let row: string[] = [];
+  let field = "";
+  let quoted = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (c === '"') {
+      if (quoted && text[i + 1] === '"') { field += '"'; i++; }
+      else quoted = !quoted;
+    } else if (c === "," && !quoted) { row.push(field); field = ""; }
+    else if ((c === "\n" || c === "\r") && !quoted) {
+      if (c === "\r" && text[i + 1] === "\n") i++;
+      row.push(field);
+      if (row.some((x) => x.trim())) rows.push(row);
+      row = []; field = "";
+    } else field += c;
+  }
+  if (field || row.length) { row.push(field); rows.push(row); }
+  return rows;
+}
+
+async function fetchHeadToHeadSeason(season: number): Promise<Map<string, HeadToHeadGame[]>> {
+  const url = `https://github.com/nflverse/nflverse-data/releases/download/stats_player/stats_player_week_${season}.csv`;
+  const response = await fetch(url, { cache: "no-store", signal: AbortSignal.timeout(30000) });
+  if (!response.ok) throw new Error(`Historical season ${season} HTTP ${response.status}`);
+  const rows = csvRows(await response.text());
+  if (rows.length < 2) throw new Error(`Historical season ${season} is empty`);
+  const headers = rows[0].map((h) => h.toLowerCase().trim());
+  const col = (...names: string[]) => names.map((name) => headers.indexOf(name)).find((i) => i >= 0) ?? -1;
+  const nameIndex = col("player_display_name", "player_name");
+  const opponentIndex = col("opponent_team");
+  const weekIndex = col("week");
+  const seasonTypeIndex = col("season_type");
+  const passIndex = col("passing_yards");
+  const rushIndex = col("rushing_yards");
+  const receiveIndex = col("receiving_yards");
+  const receptionsIndex = col("receptions");
+  if ([nameIndex, opponentIndex, weekIndex].some((i) => i < 0)) {
+    throw new Error(`Historical season ${season} missing required columns`);
+  }
+  const map = new Map<string, HeadToHeadGame[]>();
+  const number = (row: string[], index: number) => index < 0 ? 0 : Number(row[index] || 0) || 0;
+  for (const row of rows.slice(1)) {
+    if (seasonTypeIndex >= 0 && row[seasonTypeIndex] !== "REG") continue;
+    const player = row[nameIndex]?.trim();
+    const opponent = normalizeTeam(row[opponentIndex] ?? "");
+    const week = number(row, weekIndex);
+    if (!player || !opponent || !week) continue;
+    const key = normalizeName(player);
+    const games = map.get(key) ?? [];
+    games.push({ season, week, opponent,
+      passingYards: number(row, passIndex), rushingYards: number(row, rushIndex),
+      receivingYards: number(row, receiveIndex), receptions: number(row, receptionsIndex) });
+    map.set(key, games);
+  }
+  return map;
+}
+
+const getHeadToHeadHistory = unstable_cache(async (season: number) => {
+  const seasons = [season - 3, season - 2, season - 1, season];
+  const results = await Promise.allSettled(seasons.map(fetchHeadToHeadSeason));
+  const history = new Map<string, HeadToHeadGame[]>();
+  const warnings: string[] = [];
+  results.forEach((result, index) => {
+    if (result.status === "rejected") {
+      warnings.push(`Season ${seasons[index]}: historical data unavailable`);
+      return;
+    }
+    for (const [player, games] of result.value) {
+      history.set(player, [...(history.get(player) ?? []), ...games]);
+    }
+  });
+  return { history: [...history.entries()], warnings };
+}, ["propedge-head-to-head-history-v11-1"], { revalidate: 24 * 60 * 60 });
+
+function headToHeadStat(game: HeadToHeadGame, prop: SupportedProp): number {
+  switch (prop) {
+    case "Passing Yards": return game.passingYards;
+    case "Rushing Yards": return game.rushingYards;
+    case "Receiving Yards": return game.receivingYards;
+    case "Receptions": return game.receptions;
+    case "Rushing + Receiving Yards": return game.rushingYards + game.receivingYards;
+  }
+}
+
+function headToHeadExplanation(candidate: Candidate): string {
+  const games = candidate.headToHead;
+  if (!games.length) return `Player vs. ${candidate.opponentTeam}: no verified previous regular-season meetings found in the available historical dataset; no head-to-head trend is assumed.`;
+  const hits = games.filter((game) => historicalHit(headToHeadStat(game, candidate.propType), candidate.line, candidate.side)).length;
+  const values = games.map((game) => `${game.season} W${game.week}: ${round(headToHeadStat(game, candidate.propType))}`).join("; ");
+  const average = games.reduce((sum, game) => sum + headToHeadStat(game, candidate.propType), 0) / games.length;
+  return `Player vs. ${candidate.opponentTeam} history (${games.length} prior regular-season meetings, most recent first): ${values} ${candidate.propType.toLowerCase()}. ` +
+    `Average ${round(average)}; ${hits} of ${games.length} would have finished ${candidate.side.toLowerCase()} today's ${candidate.line} line. ` +
+    `These are historical comparisons to today's line, not the lines offered in those past games.`;
+}
 
 type Recommendation = Candidate & {
   verdict: Verdict;
@@ -657,7 +766,7 @@ function verifiedRecommendationReason(candidate: Candidate): string {
         `based on position-group history, not an individual-player forecast.${rankText}`;
     }
   }
-  return lead + matchupText + " " + individualOpponentContext(candidate) + " " + opponentDistributionContext(candidate) +
+  return lead + headToHeadExplanation(candidate) + " " + matchupText + " " + individualOpponentContext(candidate) + " " + opponentDistributionContext(candidate) +
     " Historical hit rates are not future probabilities; player availability and usage remain unverified.";
 }
 
@@ -1207,6 +1316,13 @@ async function generateAnalysis() {
     ),
   ]);
 
+  // Past player-vs-team meetings are optional context; missing seasons are disclosed.
+  const headToHeadResult = await getHeadToHeadHistory(nfl.season).catch(() => ({
+    history: [] as Array<[string, HeadToHeadGame[]]>,
+    warnings: ["Historical player-vs-opponent dataset unavailable"],
+  }));
+  const headToHeadByPlayer = new Map<string, HeadToHeadGame[]>(headToHeadResult.history);
+
   const defense = defenseResult.data;
   const defenseBaselineAvailable = Boolean(
     defense &&
@@ -1403,6 +1519,12 @@ async function generateAnalysis() {
       ? TEAM_NAMES[opponentAbbr] ?? opponentAbbr
       : "Unknown opponent";
 
+    const headToHead = (headToHeadByPlayer.get(normalizeName(main.player)) ?? [])
+      .filter((game) => game.opponent === opponentAbbr &&
+        (game.season < nfl.season || game.week <= nfl.latestWeek))
+      .sort((a, b) => b.season - a.season || b.week - a.week)
+      .slice(0, 8);
+
     const evidenceNotes = buildEvidenceNotes(
       recent,
       main.propType,
@@ -1504,6 +1626,7 @@ async function generateAnalysis() {
         opponentTeam,
         defensiveRankingAdjustment: defensiveContext.adjustment,
         defensiveComparison: defensiveContext.comparison,
+        headToHead,
         opportunityVerified:
           main.propType === "Receiving Yards" ||
           main.propType === "Receptions",
@@ -1587,7 +1710,9 @@ async function generateAnalysis() {
     defensiveLeagueBaselineAvailable: defenseBaselineAvailable,
     defensiveLeagueBaseline: null,
     defensivePositionSpecificEnabled: true,
-    rankingVersion: 11,
+    rankingVersion: 11.1,
+    headToHeadEnabled: true,
+    headToHeadWarnings: headToHeadResult.warnings,
     confidenceMethodology: CONFIDENCE_METHODOLOGY,
     highConfidenceCriteriaVersion: 1,
     distributionConflicts,
