@@ -9,6 +9,9 @@ const SPORT = "americanfootball_nfl";
 
 const BOOKMAKERS = "draftkings,fanduel";
 
+const CACHE_SECONDS = 30 * 60;
+const MAX_GAMES = 16;
+
 const MARKETS = [
   "player_pass_yds",
   "player_rush_yds",
@@ -32,8 +35,7 @@ const MARKET_LABELS: Record<string, string> = {
   player_rush_yds_alternate: "Rushing Yards",
   player_reception_yds_alternate: "Receiving Yards",
   player_receptions_alternate: "Receptions",
-  player_rush_reception_yds_alternate:
-    "Rushing + Receiving Yards",
+  player_rush_reception_yds_alternate: "Rushing Yards",
 };
 
 type EventData = {
@@ -83,9 +85,51 @@ type PlayerLine = {
   lastUpdate: string | null;
 };
 
+type EventFailure = {
+  eventId: string;
+  matchup: string;
+  error: string;
+};
+
+type OddsResult = {
+  success: true;
+  source: string;
+  sport: string;
+  bookmakersRequested: string[];
+  eventsAvailable: number;
+  eventsRequested: number;
+  eventsSucceeded: number;
+  eventsFailed: number;
+  eventFailures: EventFailure[];
+  count: number;
+  mainLineCount: number;
+  alternateLineCount: number;
+  mainLines: PlayerLine[];
+  alternateLines: PlayerLine[];
+  updatedAt: string;
+};
+
+type CacheEntry = {
+  expiresAt: number;
+  result: OddsResult;
+};
+
+const globalCache = globalThis as typeof globalThis & {
+  __propEdgeOddsCache?: Map<string, CacheEntry>;
+};
+
+const oddsCache =
+  globalCache.__propEdgeOddsCache ??
+  new Map<string, CacheEntry>();
+
+globalCache.__propEdgeOddsCache = oddsCache;
+
 function safeErrorMessage(status: number): string {
   if (status === 401 || status === 403) {
-    return "The Odds API rejected the request. Check the API key, plan, and available credits.";
+    return (
+      "The Odds API rejected the request. " +
+      "Check the API key, plan, and available credits."
+    );
   }
 
   if (status === 404) {
@@ -175,7 +219,8 @@ function extractLines(event: EventOdds): PlayerLine[] {
         }
 
         const player = outcome.description.trim();
-        const key = `${player.toLowerCase()}|${outcome.point}`;
+        const key =
+          `${player.toLowerCase()}|${outcome.point}`;
 
         const existing = grouped.get(key) ?? {
           player,
@@ -219,6 +264,153 @@ function extractLines(event: EventOdds): PlayerLine[] {
   return lines;
 }
 
+function createEmptyResult(
+  eventsAvailable: number,
+  eventsRequested: number
+): OddsResult {
+  return {
+    success: true,
+    source: "The Odds API",
+    sport: "NFL",
+    bookmakersRequested: [
+      "DraftKings",
+      "FanDuel",
+    ],
+    eventsAvailable,
+    eventsRequested,
+    eventsSucceeded: 0,
+    eventsFailed: 0,
+    eventFailures: [],
+    count: 0,
+    mainLineCount: 0,
+    alternateLineCount: 0,
+    mainLines: [],
+    alternateLines: [],
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+async function fetchSportsbookOdds(
+  apiKey: string,
+  gameLimit: number,
+  requestedEventId: string | null
+): Promise<OddsResult> {
+  const events = await requestOdds<EventData[]>(
+    `/sports/${SPORT}/events`,
+    apiKey
+  );
+
+  if (!Array.isArray(events)) {
+    throw new Error("Invalid NFL events response.");
+  }
+
+  const upcoming = events
+    .filter(
+      (event) =>
+        new Date(event.commence_time).getTime() >
+        Date.now()
+    )
+    .sort(
+      (a, b) =>
+        new Date(a.commence_time).getTime() -
+        new Date(b.commence_time).getTime()
+    );
+
+  let selectedEvents: EventData[];
+
+  if (requestedEventId) {
+    selectedEvents = upcoming.filter(
+      (event) => event.id === requestedEventId
+    );
+  } else {
+    selectedEvents = upcoming.slice(0, gameLimit);
+  }
+
+  const result = createEmptyResult(
+    upcoming.length,
+    selectedEvents.length
+  );
+
+  if (selectedEvents.length === 0) {
+    return result;
+  }
+
+  // Limit simultaneous requests to avoid overloading
+  // the odds provider.
+  const CONCURRENCY = 3;
+
+  const allLines: PlayerLine[] = [];
+
+  for (
+    let start = 0;
+    start < selectedEvents.length;
+    start += CONCURRENCY
+  ) {
+    const batch = selectedEvents.slice(
+      start,
+      start + CONCURRENCY
+    );
+
+    const responses = await Promise.allSettled(
+      batch.map((event) =>
+        requestOdds<EventOdds>(
+          `/sports/${SPORT}/events/${encodeURIComponent(
+            event.id
+          )}/odds`,
+          apiKey,
+          {
+            bookmakers: BOOKMAKERS,
+            markets: MARKETS.join(","),
+            oddsFormat: "american",
+            dateFormat: "iso",
+          }
+        )
+      )
+    );
+
+    for (let index = 0; index < responses.length; index++) {
+      const response = responses[index];
+      const event = batch[index];
+
+      if (response.status === "fulfilled") {
+        result.eventsSucceeded++;
+
+        allLines.push(
+          ...extractLines(response.value)
+        );
+      } else {
+        result.eventsFailed++;
+
+        result.eventFailures.push({
+          eventId: event.id,
+          matchup:
+            `${event.away_team} at ${event.home_team}`,
+          error:
+            response.reason instanceof Error
+              ? response.reason.message
+              : "Unable to retrieve event odds.",
+        });
+      }
+    }
+  }
+
+  result.mainLines = allLines.filter(
+    (line) => line.marketType === "main"
+  );
+
+  result.alternateLines = allLines.filter(
+    (line) => line.marketType === "alternate"
+  );
+
+  result.mainLineCount = result.mainLines.length;
+  result.alternateLineCount =
+    result.alternateLines.length;
+
+  result.count = allLines.length;
+
+  return result;
+}
+
 export async function GET(request: NextRequest) {
   try {
     const apiKey = process.env.ODDS_API_KEY;
@@ -227,105 +419,78 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: "ODDS_API_KEY is not configured in Vercel.",
+          error:
+            "ODDS_API_KEY is not configured in Vercel.",
         },
         { status: 503 }
       );
     }
 
-    // Limit testing to one event to avoid unnecessary
-    // API credit usage.
     const requestedEventId =
       request.nextUrl.searchParams.get("eventId");
 
-    const events = await requestOdds<EventData[]>(
-      `/sports/${SPORT}/events`,
-      apiKey
-    );
+    const rawGames =
+      request.nextUrl.searchParams.get("games");
 
-    if (!Array.isArray(events)) {
-      throw new Error("Invalid NFL events response.");
+    const parsedGames = rawGames
+      ? Number(rawGames)
+      : 1;
+
+    if (
+      !Number.isInteger(parsedGames) ||
+      parsedGames < 1 ||
+      parsedGames > MAX_GAMES
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            `games must be a whole number between 1 and ${MAX_GAMES}.`,
+        },
+        { status: 400 }
+      );
     }
 
-    const upcoming = events
-      .filter(
-        (event) =>
-          new Date(event.commence_time).getTime() >
-          Date.now()
-      )
-      .sort(
-        (a, b) =>
-          new Date(a.commence_time).getTime() -
-          new Date(b.commence_time).getTime()
+    const cacheKey = requestedEventId
+      ? `event:${requestedEventId}`
+      : `games:${parsedGames}`;
+
+    const cached = oddsCache.get(cacheKey);
+
+    if (cached && cached.expiresAt > Date.now()) {
+      return NextResponse.json(
+        {
+          ...cached.result,
+          cached: true,
+        },
+        {
+          headers: {
+            "Cache-Control": "private, no-store",
+          },
+        }
       );
+    }
 
-    const selectedEvent = requestedEventId
-      ? upcoming.find(
-          (event) => event.id === requestedEventId
-        )
-      : upcoming[0];
+    const result = await fetchSportsbookOdds(
+      apiKey,
+      parsedGames,
+      requestedEventId
+    );
 
-    if (!selectedEvent) {
-      return NextResponse.json({
-        success: true,
-        source: "The Odds API",
-        sport: "NFL",
-        count: 0,
-        mainLines: [],
-        alternateLines: [],
-        eventsAvailable: upcoming.length,
-        message: requestedEventId
-          ? "Requested upcoming event was not found."
-          : "No upcoming NFL events are currently available.",
-        updatedAt: new Date().toISOString(),
+    // Avoid caching partial failures as if they were
+    // complete successful odds snapshots.
+    if (result.eventsFailed === 0) {
+      oddsCache.set(cacheKey, {
+        expiresAt:
+          Date.now() + CACHE_SECONDS * 1000,
+        result,
       });
     }
 
-    const odds = await requestOdds<EventOdds>(
-      `/sports/${SPORT}/events/${encodeURIComponent(
-        selectedEvent.id
-      )}/odds`,
-      apiKey,
-      {
-        bookmakers: BOOKMAKERS,
-        markets: MARKETS.join(","),
-        oddsFormat: "american",
-        dateFormat: "iso",
-      }
-    );
-
-    const lines = extractLines(odds);
-
-    const mainLines = lines.filter(
-      (line) => line.marketType === "main"
-    );
-
-    const alternateLines = lines.filter(
-      (line) => line.marketType === "alternate"
-    );
-
     return NextResponse.json(
       {
-        success: true,
-        source: "The Odds API",
-        sport: "NFL",
-        bookmakersRequested: [
-          "DraftKings",
-          "FanDuel",
-        ],
-        event: {
-          id: selectedEvent.id,
-          homeTeam: selectedEvent.home_team,
-          awayTeam: selectedEvent.away_team,
-          gameTime: selectedEvent.commence_time,
-        },
-        eventsAvailable: upcoming.length,
-        count: lines.length,
-        mainLineCount: mainLines.length,
-        alternateLineCount: alternateLines.length,
-        mainLines,
-        alternateLines,
-        updatedAt: new Date().toISOString(),
+        ...result,
+        cached: false,
       },
       {
         headers: {
@@ -334,7 +499,10 @@ export async function GET(request: NextRequest) {
       }
     );
   } catch (error) {
-    console.error("Sportsbook odds API error:", error);
+    console.error(
+      "Sportsbook odds API error:",
+      error
+    );
 
     return NextResponse.json(
       {
