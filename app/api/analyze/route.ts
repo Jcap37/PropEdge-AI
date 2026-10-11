@@ -11,7 +11,6 @@ import {
   type DefensiveMatchup,
   type PositionDefensiveMatchup,
   type PlayerPosition,
-  type PositionDefensiveMatchup,
 } from "../../../lib/nfl-defense";
 
 export const runtime = "nodejs";
