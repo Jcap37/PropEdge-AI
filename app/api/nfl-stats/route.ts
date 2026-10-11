@@ -2,107 +2,162 @@
 import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
-const CURRENT_SEASON = 2026;
+const SEASON = 2026;
 
 const DATA_URL =
-  "https://github.com/nflverse/nflverse-data/releases/download/player_stats/player_stats.csv";
+  `https://github.com/nflverse/nflverse-data/releases/download/stats_player/stats_player_week_${SEASON}.csv`;
+
+// Parse CSV correctly, including quoted values.
+function parseCSV(text: string): string[][] {
+  const rows: string[][] = [];
+  let row: string[] = [];
+  let field = "";
+  let quoted = false;
+
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i];
+
+    if (char === '"') {
+      if (quoted && text[i + 1] === '"') {
+        field += '"';
+        i++;
+      } else {
+        quoted = !quoted;
+      }
+    } else if (char === "," && !quoted) {
+      row.push(field);
+      field = "";
+    } else if (
+      (char === "\n" || char === "\r") &&
+      !quoted
+    ) {
+      if (char === "\r" && text[i + 1] === "\n") {
+        i++;
+      }
+
+      row.push(field);
+      if (row.some((value) => value !== "")) {
+        rows.push(row);
+      }
+
+      row = [];
+      field = "";
+    } else {
+      field += char;
+    }
+  }
+
+  row.push(field);
+
+  if (row.some((value) => value !== "")) {
+    rows.push(row);
+  }
+
+  return rows;
+}
 
 export async function GET() {
   try {
     const response = await fetch(DATA_URL, {
-      cache: "no-store",
+      next: { revalidate: 3600 },
     });
 
     if (!response.ok) {
       throw new Error(
-        `NFL data source returned ${response.status}`
+        `NFL statistics download failed: ${response.status}`
       );
     }
 
     const csv = await response.text();
-    const lines = csv.trim().split(/\r?\n/);
+    const rows = parseCSV(csv);
 
-    if (lines.length < 2) {
-      throw new Error("No player statistics found");
+    if (rows.length < 2) {
+      throw new Error("NFL statistics dataset is empty");
     }
 
-    const headers = lines[0]
-      .replace(/^\uFEFF/, "")
-      .split(",");
+    const headers = rows[0].map((header) =>
+      header.replace(/^\uFEFF/, "").trim()
+    );
 
-    const getIndex = (name: string) =>
+    const index = (name: string) =>
       headers.indexOf(name);
 
-    const seasonIndex = getIndex("season");
-    const weekIndex = getIndex("week");
-    const nameIndex = getIndex("player_display_name");
-    const teamIndex = getIndex("recent_team");
-    const positionIndex = getIndex("position");
-    const passingIndex = getIndex("passing_yards");
-    const rushingIndex = getIndex("rushing_yards");
-    const receivingIndex = getIndex("receiving_yards");
-    const receptionsIndex = getIndex("receptions");
-    const targetsIndex = getIndex("targets");
+    const get = (row: string[], name: string) => {
+      const column = index(name);
+      return column >= 0 ? row[column] ?? "" : "";
+    };
 
-    const requiredColumns = [
-      seasonIndex,
-      weekIndex,
-      nameIndex,
-      teamIndex,
-      positionIndex,
+    const number = (row: string[], name: string) => {
+      const value = get(row, name);
+      return value === "" ? null : Number(value);
+    };
+
+    const required = [
+      "season",
+      "week",
+      "player_display_name",
+      "recent_team",
+      "position",
+      "passing_yards",
+      "rushing_yards",
+      "receiving_yards",
+      "receptions",
+      "targets",
     ];
 
-    if (requiredColumns.some((index) => index === -1)) {
+    const missing = required.filter(
+      (column) => index(column) === -1
+    );
+
+    if (missing.length > 0) {
       throw new Error(
-        "NFL statistics file is missing required columns"
+        `Missing expected columns: ${missing.join(", ")}`
       );
     }
 
-    const players = lines
+    const players = rows
       .slice(1)
-      .map((line) => line.split(","))
       .filter(
-        (row) =>
-          Number(row[seasonIndex]) === CURRENT_SEASON
+        (row) => number(row, "season") === SEASON
       )
       .map((row) => ({
-        player: row[nameIndex],
-        team: row[teamIndex],
-        position: row[positionIndex],
-        season: Number(row[seasonIndex]),
-        week: Number(row[weekIndex]),
-        passingYards:
-          passingIndex >= 0
-            ? Number(row[passingIndex]) || 0
-            : 0,
-        rushingYards:
-          rushingIndex >= 0
-            ? Number(row[rushingIndex]) || 0
-            : 0,
-        receivingYards:
-          receivingIndex >= 0
-            ? Number(row[receivingIndex]) || 0
-            : 0,
-        receptions:
-          receptionsIndex >= 0
-            ? Number(row[receptionsIndex]) || 0
-            : 0,
-        targets:
-          targetsIndex >= 0
-            ? Number(row[targetsIndex]) || 0
-            : 0,
+        player: get(row, "player_display_name"),
+        team: get(row, "recent_team"),
+        position: get(row, "position"),
+        season: number(row, "season"),
+        week: number(row, "week"),
+        passingYards: number(row, "passing_yards"),
+        rushingYards: number(row, "rushing_yards"),
+        receivingYards: number(row, "receiving_yards"),
+        receptions: number(row, "receptions"),
+        targets: number(row, "targets"),
       }))
-      .filter((player) =>
-        ["QB", "RB", "WR", "TE"].includes(
-          player.position
-        )
+      .filter(
+        (player) =>
+          player.player &&
+          player.week !== null &&
+          ["QB", "RB", "WR", "TE"].includes(
+            player.position
+          )
       );
+
+    if (players.length === 0) {
+      throw new Error(
+        "No 2026 weekly player records found"
+      );
+    }
+
+    const latestWeek = Math.max(
+      ...players.map((player) => player.week as number)
+    );
 
     return NextResponse.json({
       success: true,
       source: "nflverse",
-      season: CURRENT_SEASON,
+      season: SEASON,
+      latestWeek,
       count: players.length,
       players,
       updatedAt: new Date().toISOString(),
@@ -111,13 +166,13 @@ export async function GET() {
     return NextResponse.json(
       {
         success: false,
-        season: CURRENT_SEASON,
+        season: SEASON,
         count: 0,
         players: [],
         error:
           error instanceof Error
             ? error.message
-            : "Unable to load NFL statistics",
+            : "Unable to retrieve NFL statistics",
       },
       { status: 500 }
     );
