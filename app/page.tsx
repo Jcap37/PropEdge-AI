@@ -35,6 +35,8 @@ type ApiResponse = {
   markets?: Market[];
   updatedAt?: string;
   error?: string;
+  warnings?: string[];
+  byPropType?: Record<string, number>;
 };
 
 type Recommendation = {
@@ -90,6 +92,10 @@ function marketPosition(market: Market): Position {
     return "Kicker";
   }
 
+  if (type.includes("passing")) return "QB";
+
+  if (type.includes("rushing + receiving")) return "RB";
+
   if (
     type.includes("reception") ||
     type.includes("receiving")
@@ -101,10 +107,8 @@ function marketPosition(market: Market): Position {
     type.includes("rushing") ||
     type.includes("touchdown")
   ) {
-    return "All";
+    return "RB";
   }
-
-  if (type.includes("passing")) return "QB";
 
   return "All";
 }
@@ -163,7 +167,9 @@ export default function Home() {
 
   const [search, setSearch] = useState("");
   const [position, setPosition] = useState<Position>("All");
-  const [showAll, setShowAll] = useState(false);
+  const [propType, setPropType] = useState("All props");
+  const [visibleCount, setVisibleCount] = useState(25);
+  const [marketWarnings, setMarketWarnings] = useState<string[]>([]);
   const [expanded, setExpanded] = useState<string | null>(null);
 
   const [recommendations, setRecommendations] = useState<
@@ -305,6 +311,7 @@ export default function Home() {
       }
 
       setMarkets(data.markets || []);
+      setMarketWarnings(data.warnings || []);
       setUpdatedAt(data.updatedAt || "");
     } catch (err) {
       setError(
@@ -322,6 +329,11 @@ export default function Home() {
     void loadPublishedResearch();
   }, [loadMarkets, loadPublishedResearch]);
 
+  const propTypes = useMemo(
+    () => ["All props", ...Array.from(new Set(markets.map((m) => m.propType).filter((v): v is string => Boolean(v)))).sort()],
+    [markets]
+  );
+
   const filtered = useMemo(() => {
     const query = search.toLowerCase().trim();
 
@@ -335,13 +347,12 @@ export default function Home() {
         position === "All" ||
         marketPosition(market) === position;
 
-      return matchesSearch && matchesPosition;
+      const matchesProp = propType === "All props" || market.propType === propType;
+      return matchesSearch && matchesPosition && matchesProp;
     });
-  }, [markets, search, position]);
+  }, [markets, search, position, propType]);
 
-  const visible = showAll
-    ? filtered
-    : filtered.slice(0, 20);
+  const visible = filtered.slice(0, visibleCount);
 
   const playersTracked = new Set(
     markets.map((market) => playerName(market))
@@ -724,7 +735,7 @@ export default function Home() {
                     key={item}
                     onClick={() => {
                       setPosition(item);
-                      setShowAll(false);
+                      setVisibleCount(25);
                     }}
                     className={`rounded-lg px-4 py-2 text-sm transition ${
                       position === item
@@ -737,7 +748,24 @@ export default function Home() {
                 ))}
               </div>
 
-              <div className="flex items-center gap-3 rounded-lg border border-[#303030] bg-[#191919] px-4 py-3">
+               <div className="mb-3 flex flex-wrap items-center gap-3">
+                 <label htmlFor="prop-type" className="text-sm text-[#aaa]">Prop category</label>
+                 <select
+                   id="prop-type"
+                   value={propType}
+                   onChange={(event) => { setPropType(event.target.value); setVisibleCount(25); }}
+                   className="min-w-[230px] rounded-lg border border-[#383838] bg-[#191919] px-4 py-3 text-sm text-white"
+                 >
+                   {propTypes.map((type) => (
+                     <option key={type} value={type}>{type}</option>
+                   ))}
+                 </select>
+                 <span className="text-xs text-[#888]">{filtered.length.toLocaleString()} matching markets</span>
+               </div>
+
+               <p className="mb-3 text-xs text-[#888]">Position tabs group markets by stat type, not verified player roster positions. For example, RB receiving props may appear under WR/TE.</p>
+
+               <div className="flex items-center gap-3 rounded-lg border border-[#303030] bg-[#191919] px-4 py-3">
                 <Search
                   size={17}
                   className="text-[#888]"
@@ -747,7 +775,7 @@ export default function Home() {
                   value={search}
                   onChange={(event) => {
                     setSearch(event.target.value);
-                    setShowAll(false);
+                    setVisibleCount(25);
                   }}
                   placeholder="Search player or prop..."
                   className="w-full bg-transparent text-sm text-white outline-none placeholder:text-[#777]"
@@ -755,7 +783,13 @@ export default function Home() {
               </div>
             </div>
 
-            {error && (
+             {marketWarnings.length > 0 && (
+               <div className="border-b border-[#393124] bg-[#1b1710] px-4 py-3 text-xs text-[#dfc89e]">
+                 Some series may be incomplete ({marketWarnings.length} API warnings). Market totals reflect only loaded contracts.
+               </div>
+             )}
+
+             {error && (
               <div className="flex items-center gap-2 border-b border-red-900 p-4 text-sm text-red-400">
                 <ShieldAlert size={18} />
                 {error}
@@ -905,18 +939,16 @@ export default function Home() {
                   </table>
                 </div>
 
-                {filtered.length > 20 && (
-                  <div className="border-t border-[#292929] p-5 text-center">
-                    <button
-                      onClick={() => setShowAll(!showAll)}
-                      className="rounded-lg border border-[#333] bg-[#222] px-5 py-2 text-sm hover:bg-[#303030]"
-                    >
-                      {showAll
-                        ? "Show Less"
-                        : `Show All ${filtered.length} Markets`}
-                    </button>
-                  </div>
-                )}
+                                 {filtered.length > visibleCount && (
+                   <div className="border-t border-[#292929] p-5 text-center">
+                     <button
+                       onClick={() => setVisibleCount((count) => count + 25)}
+                       className="rounded-lg border border-[#333] bg-[#222] px-5 py-2 text-sm hover:bg-[#303030]"
+                     >
+                       Load 25 more ({Math.min(visibleCount, filtered.length)} of {filtered.length})
+                     </button>
+                   </div>
+                 )}
               </>
             )}
           </div>
