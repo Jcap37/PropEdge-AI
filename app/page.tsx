@@ -157,9 +157,11 @@ export default function Home() {
   const [analysisError, setAnalysisError] = useState("");
   const [analysisUpdatedAt, setAnalysisUpdatedAt] = useState("");
   const [analysisAttempted, setAnalysisAttempted] = useState(false);
+  const [showAdminInput, setShowAdminInput] = useState(false);
+  const [adminPassword, setAdminPassword] = useState("");
 
   const generateResearch = useCallback(async () => {
-    if (analysisLoading) return;
+    if (analysisLoading || !adminPassword.trim()) return;
     setAnalysisLoading(true);
     setAnalysisError("");
     setAnalysisAttempted(true);
@@ -167,7 +169,11 @@ export default function Home() {
     try {
       const response = await fetch("/api/analyze", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-admin-secret": adminPassword,
+        },
+        cache: "no-store",
         body: JSON.stringify({ action: "analyze" }),
       });
       const data = (await response.json()) as AnalysisResponse;
@@ -176,14 +182,16 @@ export default function Home() {
       }
       setRecommendations(data.recommendations || []);
       setAnalysisUpdatedAt(data.updatedAt || "");
+      setShowAdminInput(false);
     } catch (err) {
       setAnalysisError(
         err instanceof Error ? err.message : "Unable to generate research"
       );
     } finally {
+      setAdminPassword("");
       setAnalysisLoading(false);
     }
-  }, [analysisLoading]);
+  }, [analysisLoading, adminPassword]);
 
   const loadMarkets = useCallback(async () => {
     setLoading(true);
@@ -283,14 +291,64 @@ export default function Home() {
               </span>
             </div>
             <button
-              onClick={() => void generateResearch()}
+              type="button"
+              onClick={() => {
+                setShowAdminInput((current) => !current);
+                setAnalysisError("");
+                setAdminPassword("");
+              }}
               disabled={analysisLoading}
               className="flex items-center gap-2 rounded-lg border border-[#444] bg-white px-4 py-2 text-sm font-semibold text-black hover:bg-[#ddd] disabled:opacity-50"
             >
               <BrainCircuit size={16} />
-              {analysisLoading ? "Analyzing..." : "Generate AI Research"}
+              {analysisLoading
+                ? "Analyzing..."
+                : showAdminInput
+                  ? "Cancel"
+                  : "Generate AI Research"}
             </button>
           </div>
+
+          {showAdminInput && (
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                void generateResearch();
+              }}
+              className="mb-5 rounded-2xl border border-[#353535] bg-[#151515] p-5"
+            >
+              <label
+                htmlFor="admin-password"
+                className="mb-2 block text-sm font-semibold text-white"
+              >
+                Admin password
+              </label>
+              <p className="mb-3 text-xs leading-5 text-[#aaa]">
+                Enter the private password you saved in Vercel to authorize
+                AI analysis. It will not be stored in your browser.
+              </p>
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <input
+                  id="admin-password"
+                  type="password"
+                  autoComplete="off"
+                  value={adminPassword}
+                  onChange={(event) => setAdminPassword(event.target.value)}
+                  placeholder="Enter admin password"
+                  disabled={analysisLoading}
+                  required
+                  className="min-w-0 flex-1 rounded-lg border border-[#444] bg-[#0c0c0c] px-4 py-3 text-sm text-white outline-none focus:border-[#aaa]"
+                />
+                <button
+                  type="submit"
+                  disabled={analysisLoading || !adminPassword.trim()}
+                  className="rounded-lg bg-white px-5 py-3 text-sm font-semibold text-black hover:bg-[#ddd] disabled:opacity-50"
+                >
+                  {analysisLoading ? "Generating..." : "Run AI Analysis"}
+                </button>
+              </div>
+            </form>
+          )}
 
           <p className="mb-4 text-sm leading-6 text-[#999]">
             Experimental analysis of historical NFL passing-yard results and
@@ -327,7 +385,7 @@ export default function Home() {
                   : "Generate an analysis to see up to five NFL passing-yard research candidates, with recent performance, AI explanations, and risks."}
               </p>
               <p className="mt-5 border-t border-[#292929] pt-4 text-xs text-[#888]">
-                Each click requests a paid AI analysis. This preview is intended for development testing only.
+                Only authorized requests can run AI analysis. Results may be reused from the six-hour cache.
               </p>
             </div>
           )}
