@@ -9,6 +9,7 @@ import {
 import {
   getNFLDefenseStats,
   type DefensiveMatchup,
+  type PositionDefensiveMatchup,
   type PlayerPosition,
   type PositionDefensiveMatchup,
 } from "../../../lib/nfl-defense";
@@ -1002,11 +1003,14 @@ async function generateAnalysis() {
   ]);
 
   const defense = defenseResult.data;
-  const defenseBaselineAvailable = Boolean(defense && Object.values(defense.teams).some(
-    (team) => Object.values(team.byPosition ?? {}).some(
-      (position) => position && position.teamsRanked >= 24
-    )
-  ));
+  const defenseBaselineAvailable = Boolean(
+    defense &&
+      Object.values<DefensiveMatchup>(defense.teams).some((team) =>
+        Object.values<PositionDefensiveMatchup>(team.byPosition ?? {}).some(
+          (position) => position.teamsRanked >= 24
+        )
+      )
+  );
 
   if (
     snapshot.eventsRequested > 0 &&
