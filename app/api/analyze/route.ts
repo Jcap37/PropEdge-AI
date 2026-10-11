@@ -24,7 +24,8 @@ const PUBLISHED_PATH = "data/published-research.json";
 const ODDS_BASE = "https://api.the-odds-api.com/v4";
 const ODDS_SPORT = "americanfootball_nfl";
 
-const MAX_GAMES_TO_ANALYZE = 8;
+// Analyze a broader upcoming slate. Each event uses an Odds API request.
+const MAX_GAMES_TO_ANALYZE = 16;
 const MAX_CANDIDATES_FOR_AI = 20;
 const MAX_RECOMMENDATIONS = 5;
 const BOOKMAKERS = "draftkings,fanduel";
@@ -214,6 +215,9 @@ type Candidate = {
   evidenceNotes: string[];
   defensiveMatchup: DefensiveMatchup | null;
   opponentTeam: string;
+  // Neutral (0) when league context is missing or unsuitable.
+  defensiveRankingAdjustment: number;
+  defensiveComparison: string;
   opportunityVerified: boolean;
 };
 
@@ -423,6 +427,107 @@ function getOddsForSide(
     : line.underOdds;
 }
 
+type DefenseMetric =
+  | "passingYardsAllowedPerGame"
+  | "rushingYardsAllowedPerGame"
+  | "receivingYardsAllowedPerGame"
+  | "receptionsAllowedPerGame";
+
+type LeagueDefenseBaseline = Record<DefenseMetric, number>;
+
+// Weight each defense by recorded games rather than averaging team averages.
+// This is a descriptive league baseline, NOT a projected win probability.
+function buildLeagueDefenseBaseline(
+  teams: Record<string, DefensiveMatchup>
+): LeagueDefenseBaseline | null {
+  const metrics: DefenseMetric[] = [
+    "passingYardsAllowedPerGame",
+    "rushingYardsAllowedPerGame",
+    "receivingYardsAllowedPerGame",
+    "receptionsAllowedPerGame",
+  ];
+  const eligible = Object.values(teams).filter(
+    (team) => team.verified && team.gamesPlayed >= 3
+  );
+  // Avoid a misleading baseline from a small or partial dataset.
+  if (eligible.length < 24) return null;
+
+  const totalGames = eligible.reduce(
+    (sum, team) => sum + team.gamesPlayed, 0
+  );
+  if (totalGames <= 0) return null;
+
+  const result = {} as LeagueDefenseBaseline;
+  for (const metric of metrics) {
+    const sum = eligible.reduce(
+      (total, team) => total + team[metric] * team.gamesPlayed,
+      0
+    );
+    result[metric] = sum / totalGames;
+    if (!Number.isFinite(result[metric]) || result[metric] <= 0) {
+      return null;
+    }
+  }
+  return result;
+}
+
+function defensiveContextForCandidate(
+  matchup: DefensiveMatchup | null,
+  baseline: LeagueDefenseBaseline | null,
+  prop: SupportedProp,
+  side: Side,
+  position: string | null
+): { adjustment: number; comparison: string } {
+  if (!matchup || !baseline || !matchup.verified || matchup.gamesPlayed < 3) {
+    return { adjustment: 0, comparison: "No reliable league defensive comparison available." };
+  }
+
+  let metric: DefenseMetric;
+  let maxAdjustment = 0.05;
+  switch (prop) {
+    case "Passing Yards":
+      metric = "passingYardsAllowedPerGame";
+      break;
+    case "Rushing Yards":
+      metric = "rushingYardsAllowedPerGame";
+      // Team rushing defense is especially weak evidence for a QB's rushing.
+      maxAdjustment = position === "QB" ? 0.01 : 0.04;
+      break;
+    case "Receiving Yards":
+      metric = "receivingYardsAllowedPerGame";
+      break;
+    case "Receptions":
+      metric = "receptionsAllowedPerGame";
+      break;
+    case "Rushing + Receiving Yards":
+      // No defensible combined league metric from these team totals.
+      return { adjustment: 0, comparison: "Combined rushing + receiving: team-wide defensive totals are context only; no ranking adjustment." };
+  }
+
+  const league = baseline[metric];
+  const opponent = matchup[metric];
+  if (!Number.isFinite(opponent) || league <= 0) {
+    return { adjustment: 0, comparison: "Defensive comparison unavailable." };
+  }
+
+  // More yards/receptions allowed than league average helps Over, hurts Under.
+  // Cap influence so a four-game team sample cannot dominate player evidence.
+  const relative = (opponent - league) / league;
+  const directional = side === "Over" ? relative : -relative;
+  const adjustment = Math.max(
+    -maxAdjustment,
+    Math.min(maxAdjustment, directional * 0.2)
+  );
+  return {
+    adjustment: Number(adjustment.toFixed(4)),
+    comparison:
+      `${round(opponent)} opponent vs ${round(league)} league-average ` +
+      `${metric.replace(/([A-Z])/g, " $1").toLowerCase()} ` +
+      `per game (${matchup.gamesPlayed} opponent games); ` +
+      `small descriptive ranking adjustment ${adjustment >= 0 ? "+" : ""}${round(adjustment * 100)} points, not a player projection.`,
+  };
+}
+
 function candidateScore(candidate: Candidate): number {
   const hitRate =
     candidate.historicalHitRate / 100;
@@ -446,7 +551,8 @@ function candidateScore(candidate: Candidate): number {
     hitRate * 0.45 +
     sampleFactor * 0.2 +
     Math.min(relativeDifference, 1) * 0.2 +
-    consistency * 0.15
+    consistency * 0.15 +
+    candidate.defensiveRankingAdjustment
   );
 }
 
@@ -915,6 +1021,9 @@ async function generateAnalysis() {
   ]);
 
   const defense = defenseResult.data;
+  const defenseBaseline = defense
+    ? buildLeagueDefenseBaseline(defense.teams)
+    : null;
 
   if (
     snapshot.eventsRequested > 0 &&
@@ -1156,6 +1265,14 @@ async function generateAnalysis() {
         side.toUpperCase(),
       ].join("-");
 
+      const defensiveContext = defensiveContextForCandidate(
+        defensiveMatchup,
+        defenseBaseline,
+        main.propType,
+        side,
+        recent[0]?.position ?? null
+      );
+
       candidates.push({
         ticker,
         player: main.player,
@@ -1196,6 +1313,8 @@ async function generateAnalysis() {
         evidenceNotes,
         defensiveMatchup,
         opponentTeam,
+        defensiveRankingAdjustment: defensiveContext.adjustment,
+        defensiveComparison: defensiveContext.comparison,
         opportunityVerified:
           main.propType === "Receiving Yards" ||
           main.propType === "Receptions",
@@ -1272,6 +1391,15 @@ async function generateAnalysis() {
     candidatesReviewed: selected.length,
     candidatesByPropType,
     defensiveDataAvailable: Boolean(defense),
+    defensiveLeagueBaselineAvailable: Boolean(defenseBaseline),
+    defensiveLeagueBaseline: defenseBaseline
+      ? Object.fromEntries(
+          Object.entries(defenseBaseline).map(([key, value]) => [key, round(value)])
+        )
+      : null,
+    rankingVersion: 8,
+    rankingDescription:
+      "Historical player evidence plus capped opponent-vs-league defensive context; not a calibrated probability or expected-value model.",
     defensiveDataWarning: defenseResult.error || null,
     defensiveMatchupsVerified: selected.filter(
       (candidate) => candidate.defensiveMatchup !== null
@@ -1319,6 +1447,7 @@ Candidates include:
 - Scheduled game teams and time
 - Evidence limitations
 - Historical opponent defensive team totals when available
+- Opponent-versus-league comparison and capped ranking adjustment when available
 
 RULES:
 
@@ -1363,6 +1492,10 @@ RULES:
      rankings, position-specific allowances, or a
      player projection. Never call an opponent an
      easy or hard matchup without comparative data.
+     Even with a comparison, describe it as a team-wide
+     historical tendency, not a player-specific advantage.
+     Quarterback rushing and combined rushing/receiving
+     team totals do not justify strong matchup conclusions.
 
  15. Explain missing injury, matchup, and
      opportunity information in the risks.
@@ -1377,6 +1510,11 @@ RULES:
     when enough information is available.
 
  19. Return one evaluation per candidate.
+
+ 20. If defensiveComparison is available, state the
+     opponent-versus-league comparison accurately.
+     Do not turn the defensiveRankingAdjustment into
+     a win probability, confidence score, or betting edge.
 
 Return valid JSON only:
 
@@ -1633,21 +1771,21 @@ Allowed verdicts:
       "recorded nflverse team, not live roster status. " +
       "This is not a validated forecast, expected-value " +
       "calculation, or guarantee of betting outcomes. " +
-      "Historical opponent defensive team totals are included " +
-      "when available but are not position-specific or predictive. " +
+      "Historical opponent defensive team totals and capped " +
+      "league-relative ranking adjustments are included when available. " +
+      "These are not position-specific or predictive. " +
       "Injuries and current defensive personnel remain unverified. " +
       "Odds and availability may change.",
   };
 }
 
-// Version 7 includes historical defensive context.
-// A new cache key avoids reusing the v6 report.
+// Version 8 adds cautious league-relative defensive ranking and wider coverage.
 const getCachedAnalysis = unstable_cache(
   generateAnalysis,
-  ["propedge-ai-analysis-v7-defensive-context"],
+  ["propedge-ai-analysis-v8-league-relative-defense"],
   {
     revalidate: CACHE_SECONDS,
-    tags: ["propedge-ai-analysis-v7"],
+    tags: ["propedge-ai-analysis-v8"],
   }
 );
 
@@ -1804,7 +1942,8 @@ export async function POST(request: NextRequest) {
         cacheDurationHours: 6,
         sportsbookGamesPerAnalysis:
           MAX_GAMES_TO_ANALYZE,
-        evidenceFilterVersion: 7,
+        evidenceFilterVersion: 8,
+        leagueRelativeDefenseRankingEnabled: true,
         defensiveContextEnabled: true,
         teamMatchingEnabled: true,
       });
