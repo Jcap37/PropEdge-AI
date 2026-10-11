@@ -59,6 +59,8 @@ type AnalysisResponse = {
   recommendations?: Recommendation[];
   updatedAt?: string;
   error?: string;
+  published?: boolean;
+  publishError?: string;
 };
 
 type Position = "All" | "QB" | "RB" | "WR/TE" | "Kicker";
@@ -70,6 +72,12 @@ const positions: Position[] = [
   "WR/TE",
   "Kicker",
 ];
+
+// Public, read-only published research.
+// This URL requires the GitHub repository to be public.
+const PUBLISHED_RESEARCH_URL =
+  "https://raw.githubusercontent.com/" +
+  "Jcap37/PropEdge-AI/main/data/published-research.json";
 
 function marketPosition(market: Market): Position {
   const type = (market.propType || "").toLowerCase();
@@ -93,8 +101,6 @@ function marketPosition(market: Market): Position {
     type.includes("rushing") ||
     type.includes("touchdown")
   ) {
-    // Rushing and TD props can belong to multiple
-    // positions. Don't guess from the stat alone.
     return "All";
   }
 
@@ -105,7 +111,9 @@ function marketPosition(market: Market): Position {
 
 function displayPrice(value?: string | null) {
   if (value == null || value === "") return "—";
+
   const number = Number(value);
+
   return Number.isFinite(number)
     ? `${Math.round(number * 100)}¢`
     : "—";
@@ -113,6 +121,7 @@ function displayPrice(value?: string | null) {
 
 function displayVolume(value?: number) {
   if (value == null) return "—";
+
   return new Intl.NumberFormat("en-US", {
     notation: "compact",
     maximumFractionDigits: 1,
@@ -121,7 +130,9 @@ function displayVolume(value?: number) {
 
 function displayDate(value?: string | null) {
   if (!value) return "—";
+
   const date = new Date(value);
+
   if (Number.isNaN(date.getTime())) return "—";
 
   return date.toLocaleString("en-US", {
@@ -140,6 +151,7 @@ function propLabel(market: Market) {
   if (market.line != null && market.propType) {
     return `${market.line}+ ${market.propType}`;
   }
+
   return market.title;
 }
 
@@ -148,22 +160,83 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [updatedAt, setUpdatedAt] = useState("");
+
   const [search, setSearch] = useState("");
   const [position, setPosition] = useState<Position>("All");
   const [showAll, setShowAll] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
-  const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
+
+  const [recommendations, setRecommendations] = useState<
+    Recommendation[]
+  >([]);
+
   const [analysisLoading, setAnalysisLoading] = useState(false);
   const [analysisError, setAnalysisError] = useState("");
   const [analysisUpdatedAt, setAnalysisUpdatedAt] = useState("");
   const [analysisAttempted, setAnalysisAttempted] = useState(false);
+
   const [showAdminInput, setShowAdminInput] = useState(false);
   const [adminPassword, setAdminPassword] = useState("");
 
+  const [publishedLoading, setPublishedLoading] = useState(true);
+  const [publishedError, setPublishedError] = useState("");
+  const [publicationWarning, setPublicationWarning] = useState("");
+
+  // Load saved research without using OpenAI.
+  const loadPublishedResearch = useCallback(async () => {
+    setPublishedLoading(true);
+    setPublishedError("");
+
+    try {
+      const url =
+        PUBLISHED_RESEARCH_URL +
+        "?v=" +
+        Date.now().toString();
+
+      const response = await fetch(url, {
+        method: "GET",
+        cache: "no-store",
+      });
+
+      if (!response.ok) {
+        throw new Error(
+          "Unable to load published research from GitHub. " +
+          "Make sure the repository is public and the JSON file exists."
+        );
+      }
+
+      const data = (await response.json()) as AnalysisResponse;
+
+      if (
+        !data.success ||
+        !Array.isArray(data.recommendations)
+      ) {
+        throw new Error(
+          "Published research has an invalid format."
+        );
+      }
+
+      setRecommendations(data.recommendations);
+      setAnalysisUpdatedAt(data.updatedAt || "");
+      setAnalysisAttempted(true);
+    } catch (err) {
+      setPublishedError(
+        err instanceof Error
+          ? err.message
+          : "Unable to load published research."
+      );
+    } finally {
+      setPublishedLoading(false);
+    }
+  }, []);
+
+  // Admin-only generation.
   const generateResearch = useCallback(async () => {
     if (analysisLoading || !adminPassword.trim()) return;
+
     setAnalysisLoading(true);
     setAnalysisError("");
+    setPublicationWarning("");
     setAnalysisAttempted(true);
 
     try {
@@ -174,18 +247,39 @@ export default function Home() {
           "x-admin-secret": adminPassword,
         },
         cache: "no-store",
-        body: JSON.stringify({ action: "analyze" }),
+        body: JSON.stringify({
+          action: "analyze",
+        }),
       });
+
       const data = (await response.json()) as AnalysisResponse;
+
       if (!response.ok || !data.success) {
-        throw new Error(data.error || "Unable to generate research");
+        throw new Error(
+          data.error || "Unable to generate research."
+        );
       }
+
       setRecommendations(data.recommendations || []);
       setAnalysisUpdatedAt(data.updatedAt || "");
       setShowAdminInput(false);
+
+      if (data.published === false) {
+        setPublicationWarning(
+          "AI research was generated, but publishing failed. " +
+          (data.publishError || "Check the GitHub connection.")
+        );
+      } else if (data.published !== true) {
+        setPublicationWarning(
+          "AI research was generated, but GitHub publishing " +
+          "was not confirmed."
+        );
+      }
     } catch (err) {
       setAnalysisError(
-        err instanceof Error ? err.message : "Unable to generate research"
+        err instanceof Error
+          ? err.message
+          : "Unable to generate research."
       );
     } finally {
       setAdminPassword("");
@@ -205,7 +299,9 @@ export default function Home() {
       const data = (await response.json()) as ApiResponse;
 
       if (!response.ok || !data.success) {
-        throw new Error(data.error || "Unable to load markets");
+        throw new Error(
+          data.error || "Unable to load markets."
+        );
       }
 
       setMarkets(data.markets || []);
@@ -214,7 +310,7 @@ export default function Home() {
       setError(
         err instanceof Error
           ? err.message
-          : "Unable to load markets"
+          : "Unable to load markets."
       );
     } finally {
       setLoading(false);
@@ -223,7 +319,8 @@ export default function Home() {
 
   useEffect(() => {
     void loadMarkets();
-  }, [loadMarkets]);
+    void loadPublishedResearch();
+  }, [loadMarkets, loadPublishedResearch]);
 
   const filtered = useMemo(() => {
     const query = search.toLowerCase().trim();
@@ -242,7 +339,9 @@ export default function Home() {
     });
   }, [markets, search, position]);
 
-  const visible = showAll ? filtered : filtered.slice(0, 20);
+  const visible = showAll
+    ? filtered
+    : filtered.slice(0, 20);
 
   const playersTracked = new Set(
     markets.map((market) => playerName(market))
@@ -251,15 +350,18 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-[#080808] text-[#f5f5f5]">
       <div className="mx-auto max-w-6xl px-5 py-8 md:px-8">
+
         <header className="mb-10 flex flex-wrap items-center justify-between gap-4 border-b border-[#242424] pb-6">
           <div className="flex items-center gap-3">
             <div className="rounded-xl border border-[#333] bg-[#161616] p-3">
               <BrainCircuit size={24} />
             </div>
+
             <div>
               <h1 className="text-2xl font-bold tracking-tight">
                 PropEdge AI
               </h1>
+
               <p className="text-xs text-[#999]">
                 Player prop research & intelligence
               </p>
@@ -286,27 +388,46 @@ export default function Home() {
                 <Sparkles size={22} />
                 Top AI Player Props
               </h2>
+
               <span className="rounded-full bg-[#222] px-3 py-1 text-xs text-[#aaa]">
-                Research preview
+                Published research
               </span>
             </div>
-            <button
-              type="button"
-              onClick={() => {
-                setShowAdminInput((current) => !current);
-                setAnalysisError("");
-                setAdminPassword("");
-              }}
-              disabled={analysisLoading}
-              className="flex items-center gap-2 rounded-lg border border-[#444] bg-white px-4 py-2 text-sm font-semibold text-black hover:bg-[#ddd] disabled:opacity-50"
-            >
-              <BrainCircuit size={16} />
-              {analysisLoading
-                ? "Analyzing..."
-                : showAdminInput
-                  ? "Cancel"
-                  : "Generate AI Research"}
-            </button>
+
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => void loadPublishedResearch()}
+                disabled={publishedLoading || analysisLoading}
+                className="flex items-center gap-2 rounded-lg border border-[#444] bg-[#171717] px-4 py-2 text-sm text-white hover:bg-[#252525] disabled:opacity-50"
+              >
+                <RefreshCw
+                  size={15}
+                  className={
+                    publishedLoading ? "animate-spin" : ""
+                  }
+                />
+                Refresh Research
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setShowAdminInput((current) => !current);
+                  setAnalysisError("");
+                  setAdminPassword("");
+                }}
+                disabled={analysisLoading}
+                className="flex items-center gap-2 rounded-lg border border-[#444] bg-white px-4 py-2 text-sm font-semibold text-black hover:bg-[#ddd] disabled:opacity-50"
+              >
+                <BrainCircuit size={16} />
+                {analysisLoading
+                  ? "Analyzing..."
+                  : showAdminInput
+                    ? "Cancel"
+                    : "Generate AI Research"}
+              </button>
+            </div>
           </div>
 
           {showAdminInput && (
@@ -323,37 +444,48 @@ export default function Home() {
               >
                 Admin password
               </label>
+
               <p className="mb-3 text-xs leading-5 text-[#aaa]">
-                Enter the private password you saved in Vercel to authorize
-                AI analysis. It will not be stored in your browser.
+                Only the administrator can generate and publish
+                new AI research. Your password is not saved
+                in browser storage.
               </p>
+
               <div className="flex flex-col gap-3 sm:flex-row">
                 <input
                   id="admin-password"
                   type="password"
                   autoComplete="off"
                   value={adminPassword}
-                  onChange={(event) => setAdminPassword(event.target.value)}
+                  onChange={(event) =>
+                    setAdminPassword(event.target.value)
+                  }
                   placeholder="Enter admin password"
                   disabled={analysisLoading}
                   required
                   className="min-w-0 flex-1 rounded-lg border border-[#444] bg-[#0c0c0c] px-4 py-3 text-sm text-white outline-none focus:border-[#aaa]"
                 />
+
                 <button
                   type="submit"
-                  disabled={analysisLoading || !adminPassword.trim()}
+                  disabled={
+                    analysisLoading || !adminPassword.trim()
+                  }
                   className="rounded-lg bg-white px-5 py-3 text-sm font-semibold text-black hover:bg-[#ddd] disabled:opacity-50"
                 >
-                  {analysisLoading ? "Generating..." : "Run AI Analysis"}
+                  {analysisLoading
+                    ? "Generating..."
+                    : "Run AI Analysis"}
                 </button>
               </div>
             </form>
           )}
 
           <p className="mb-4 text-sm leading-6 text-[#999]">
-            Experimental analysis of historical NFL passing-yard results and
-            Kalshi thresholds. Historical hit rates are not predicted win
-            probabilities. Matchups, injuries, and expected value are not verified.
+            Experimental analysis of historical NFL passing-yard
+            results and Kalshi thresholds. Historical hit rates
+            are not predicted win probabilities. Matchups,
+            injuries, and expected value are not verified.
           </p>
 
           {analysisError && (
@@ -363,101 +495,167 @@ export default function Home() {
             </div>
           )}
 
-          {analysisLoading && (
-            <div className="rounded-2xl border border-[#303030] bg-[#111] p-8 text-center text-sm text-[#aaa]">
-              <RefreshCw size={22} className="mx-auto mb-3 animate-spin" />
-              Reviewing verified research and generating explanations...
+          {publicationWarning && (
+            <div className="mb-4 flex items-center gap-2 rounded-xl border border-yellow-900 bg-[#211b10] p-4 text-sm text-yellow-200">
+              <ShieldAlert size={18} />
+              {publicationWarning}
             </div>
           )}
 
-          {!analysisLoading && recommendations.length === 0 && (
-            <div className="rounded-2xl border border-[#303030] bg-[#111] p-6 md:p-8">
-              <div className="mb-3 flex items-center gap-2 text-sm text-[#aaa]">
-                <BrainCircuit size={18} />
-                AI Recommendations
+          {publishedError && (
+            <div className="mb-4 rounded-xl border border-[#403323] bg-[#1a1610] p-4 text-sm text-[#e6c69c]">
+              <div className="flex items-center gap-2">
+                <ShieldAlert size={18} />
+                <span>
+                  Published research could not be loaded.
+                </span>
               </div>
-              <h3 className="mb-3 text-xl font-semibold">
-                Evidence-backed player prop research
-              </h3>
-              <p className="text-sm leading-7 text-[#aaa]">
-                {analysisAttempted && !analysisError
-                  ? "No research candidates were returned. Try again when more data is available."
-                  : "Generate an analysis to see up to five NFL passing-yard research candidates, with recent performance, AI explanations, and risks."}
-              </p>
-              <p className="mt-5 border-t border-[#292929] pt-4 text-xs text-[#888]">
-                Only authorized requests can run AI analysis. Results may be reused from the six-hour cache.
+              <p className="mt-2 text-xs leading-5">
+                {publishedError}
               </p>
             </div>
           )}
 
-          {!analysisLoading && recommendations.length > 0 && (
-            <div className="grid gap-4 md:grid-cols-2">
-              {recommendations.map((item) => (
-                <article
-                  key={item.ticker}
-                  className="rounded-2xl border border-[#303030] bg-[#111] p-6"
-                >
-                  <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                      <p className="text-xs text-[#888]">NFL · Passing Yards</p>
-                      <h3 className="mt-1 text-xl font-bold">{item.player}</h3>
-                      <p className="mt-1 text-sm text-[#bbb]">
-                        {item.line}+ passing yards
-                      </p>
-                    </div>
-                    <span className="rounded-full border border-[#3a3a3a] bg-[#242424] px-3 py-1 text-xs text-[#ddd]">
-                      {item.verdict === "worth_researching"
-                        ? "Worth researching"
-                        : "Limited evidence"}
-                    </span>
-                  </div>
-
-                  <div className="mb-4 grid grid-cols-3 gap-2">
-                    <div className="rounded-lg bg-[#1e1e1e] p-3">
-                      <p className="text-[11px] text-[#999]">Recent avg.</p>
-                      <p className="mt-1 text-lg font-semibold">{item.averagePassingYards}</p>
-                    </div>
-                    <div className="rounded-lg bg-[#1e1e1e] p-3">
-                      <p className="text-[11px] text-[#999]">Past hits</p>
-                      <p className="mt-1 text-lg font-semibold">
-                        {item.historicalHits}/{item.sampleSize}
-                      </p>
-                    </div>
-                    <div className="rounded-lg bg-[#1e1e1e] p-3">
-                      <p className="text-[11px] text-[#999]">Avg. vs line</p>
-                      <p className="mt-1 text-lg font-semibold">
-                        {item.differenceFromLine > 0 ? "+" : ""}
-                        {item.differenceFromLine}
-                      </p>
-                    </div>
-                  </div>
-
-                  <p className="mb-2 text-xs text-[#888]">
-                    Recent game yards: {item.recentPassingYards.join(" · ")}
-                  </p>
-                  <div className="border-t border-[#292929] pt-4">
-                    <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[#aaa]">
-                      AI analysis
-                    </p>
-                    <p className="text-sm leading-6 text-[#ddd]">{item.reason}</p>
-                    <p className="mb-2 mt-4 text-xs font-semibold uppercase tracking-wide text-[#aaa]">
-                      Risks and uncertainty
-                    </p>
-                    <p className="text-sm leading-6 text-[#aaa]">{item.risks}</p>
-                    <p className="mt-4 text-xs text-[#777]">
-                      Game: {displayDate(item.gameTime)} · Historical sample: {item.sampleSize} games
-                    </p>
-                  </div>
-                </article>
-              ))}
+          {(analysisLoading ||
+            (publishedLoading &&
+              recommendations.length === 0)) && (
+            <div className="rounded-2xl border border-[#303030] bg-[#111] p-8 text-center text-sm text-[#aaa]">
+              <RefreshCw
+                size={22}
+                className="mx-auto mb-3 animate-spin"
+              />
+              {analysisLoading
+                ? "Reviewing verified research and generating explanations..."
+                : "Loading published AI research..."}
             </div>
           )}
 
-          {analysisUpdatedAt && recommendations.length > 0 && (
-            <p className="mt-3 text-xs text-[#888]">
-              Generated {displayDate(analysisUpdatedAt)} · Research only, not a validated betting forecast.
-            </p>
-          )}
+          {!analysisLoading &&
+            !publishedLoading &&
+            recommendations.length === 0 && (
+              <div className="rounded-2xl border border-[#303030] bg-[#111] p-6 md:p-8">
+                <div className="mb-3 flex items-center gap-2 text-sm text-[#aaa]">
+                  <BrainCircuit size={18} />
+                  AI Recommendations
+                </div>
+
+                <h3 className="mb-3 text-xl font-semibold">
+                  Evidence-backed player prop research
+                </h3>
+
+                <p className="text-sm leading-7 text-[#aaa]">
+                  {analysisAttempted && !analysisError
+                    ? "No research candidates are currently published."
+                    : "Published NFL passing-yard research will appear here automatically when available."}
+                </p>
+
+                <p className="mt-5 border-t border-[#292929] pt-4 text-xs text-[#888]">
+                  Viewing published research does not use OpenAI.
+                  Only authorized administrators can generate
+                  new analysis.
+                </p>
+              </div>
+            )}
+
+          {!analysisLoading &&
+            recommendations.length > 0 && (
+              <div className="grid gap-4 md:grid-cols-2">
+                {recommendations.map((item) => (
+                  <article
+                    key={item.ticker}
+                    className="rounded-2xl border border-[#303030] bg-[#111] p-6"
+                  >
+                    <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <p className="text-xs text-[#888]">
+                          NFL · Passing Yards
+                        </p>
+
+                        <h3 className="mt-1 text-xl font-bold">
+                          {item.player}
+                        </h3>
+
+                        <p className="mt-1 text-sm text-[#bbb]">
+                          {item.line}+ passing yards
+                        </p>
+                      </div>
+
+                      <span className="rounded-full border border-[#3a3a3a] bg-[#242424] px-3 py-1 text-xs text-[#ddd]">
+                        {item.verdict === "worth_researching"
+                          ? "Worth researching"
+                          : "Limited evidence"}
+                      </span>
+                    </div>
+
+                    <div className="mb-4 grid grid-cols-3 gap-2">
+                      <div className="rounded-lg bg-[#1e1e1e] p-3">
+                        <p className="text-[11px] text-[#999]">
+                          Recent avg.
+                        </p>
+                        <p className="mt-1 text-lg font-semibold">
+                          {item.averagePassingYards}
+                        </p>
+                      </div>
+
+                      <div className="rounded-lg bg-[#1e1e1e] p-3">
+                        <p className="text-[11px] text-[#999]">
+                          Past hits
+                        </p>
+                        <p className="mt-1 text-lg font-semibold">
+                          {item.historicalHits}/{item.sampleSize}
+                        </p>
+                      </div>
+
+                      <div className="rounded-lg bg-[#1e1e1e] p-3">
+                        <p className="text-[11px] text-[#999]">
+                          Avg. vs line
+                        </p>
+                        <p className="mt-1 text-lg font-semibold">
+                          {item.differenceFromLine > 0 ? "+" : ""}
+                          {item.differenceFromLine}
+                        </p>
+                      </div>
+                    </div>
+
+                    <p className="mb-2 text-xs text-[#888]">
+                      Recent game yards:{" "}
+                      {item.recentPassingYards.join(" · ")}
+                    </p>
+
+                    <div className="border-t border-[#292929] pt-4">
+                      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[#aaa]">
+                        AI analysis
+                      </p>
+
+                      <p className="text-sm leading-6 text-[#ddd]">
+                        {item.reason}
+                      </p>
+
+                      <p className="mb-2 mt-4 text-xs font-semibold uppercase tracking-wide text-[#aaa]">
+                        Risks and uncertainty
+                      </p>
+
+                      <p className="text-sm leading-6 text-[#aaa]">
+                        {item.risks}
+                      </p>
+
+                      <p className="mt-4 text-xs text-[#777]">
+                        Game: {displayDate(item.gameTime)} ·
+                        Historical sample: {item.sampleSize} games
+                      </p>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            )}
+
+          {analysisUpdatedAt &&
+            recommendations.length > 0 && (
+              <p className="mt-3 text-xs text-[#888]">
+                Generated {displayDate(analysisUpdatedAt)} ·
+                Research only, not a validated betting forecast.
+              </p>
+            )}
         </section>
 
         <section className="mb-8 grid gap-3 sm:grid-cols-3">
@@ -465,6 +663,7 @@ export default function Home() {
             <p className="mb-2 text-xs text-[#999]">
               Available Markets
             </p>
+
             <p className="text-3xl font-bold">
               {loading ? "..." : markets.length}
             </p>
@@ -474,6 +673,7 @@ export default function Home() {
             <p className="mb-2 text-xs text-[#999]">
               Players Tracked
             </p>
+
             <p className="text-3xl font-bold">
               {loading ? "..." : playersTracked}
             </p>
@@ -483,10 +683,12 @@ export default function Home() {
             <p className="mb-2 text-xs text-[#999]">
               Connected Source
             </p>
+
             <p className="flex items-center gap-2 text-xl font-bold">
               <span className="h-2 w-2 rounded-full bg-emerald-500" />
               Kalshi
             </p>
+
             <p className="mt-1 text-xs text-[#777]">
               PrizePicks & Polymarket planned
             </p>
@@ -499,6 +701,7 @@ export default function Home() {
               <h2 className="text-2xl font-bold">
                 Market Explorer
               </h2>
+
               <p className="mt-2 text-sm text-[#999]">
                 Browse verified player prop markets.
                 These are not AI-ranked picks.
@@ -535,7 +738,11 @@ export default function Home() {
               </div>
 
               <div className="flex items-center gap-3 rounded-lg border border-[#303030] bg-[#191919] px-4 py-3">
-                <Search size={17} className="text-[#888]" />
+                <Search
+                  size={17}
+                  className="text-[#888]"
+                />
+
                 <input
                   value={search}
                   onChange={(event) => {
@@ -569,9 +776,11 @@ export default function Home() {
                   size={26}
                   className="mx-auto mb-3 text-[#777]"
                 />
+
                 <p className="font-semibold">
                   No matching markets
                 </p>
+
                 <p className="mt-2 text-sm text-[#888]">
                   {position !== "All" && position !== "QB"
                     ? "We haven't connected this position's prop markets yet."
@@ -617,21 +826,27 @@ export default function Home() {
                           <td className="px-5 py-4 font-semibold">
                             {playerName(market)}
                           </td>
+
                           <td className="px-5 py-4 text-[#ddd]">
                             {propLabel(market)}
                           </td>
+
                           <td className="px-5 py-4 text-[#bbb]">
                             Kalshi
                           </td>
+
                           <td className="px-5 py-4">
                             {displayPrice(market.yesAsk)}
                           </td>
+
                           <td className="px-5 py-4 text-[#bbb]">
                             {displayVolume(market.volume)}
                           </td>
+
                           <td className="px-5 py-4 text-[#999]">
                             {displayDate(market.gameTime)}
                           </td>
+
                           <td className="px-5 py-4">
                             <button
                               onClick={() =>
@@ -656,17 +871,22 @@ export default function Home() {
                                 <p className="font-semibold text-white">
                                   Market information
                                 </p>
+
                                 <p>
                                   Yes Bid:{" "}
                                   {displayPrice(market.yesBid)}
                                 </p>
+
                                 <p>
                                   Yes Ask:{" "}
                                   {displayPrice(market.yesAsk)}
                                 </p>
+
                                 <p>
-                                  AI analysis: Not available yet
+                                  AI analysis: See published
+                                  research above
                                 </p>
+
                                 <a
                                   href="https://kalshi.com/markets"
                                   target="_blank"
