@@ -23,12 +23,16 @@
     "Receptions": 4,
     "Rushing + Receiving Yards": 3
   },
+  "defensiveDataAvailable": true,
+  "defensiveDataWarning": null,
+  "defensiveMatchupsVerified": 20,
   "count": 5,
   "recommendationsByPropType": {
     "Passing Yards": 1,
     "Rushing Yards": 1,
-    "Receiving Yards": 2,
-    "Receptions": 1
+    "Receiving Yards": 1,
+    "Receptions": 1,
+    "Rushing + Receiving Yards": 1
   },
   "recommendations": [
     {
@@ -49,7 +53,7 @@
       "homeTeam": "New Orleans Saints",
       "awayTeam": "Minnesota Vikings",
       "gameTime": "2026-10-11T17:00:00Z",
-      "lastOddsUpdate": "2026-10-11T05:20:00Z",
+      "lastOddsUpdate": "2026-10-11T05:32:31Z",
       "sportsbookLines": [
         {
           "bookmaker": "DraftKings",
@@ -342,12 +346,25 @@
         "The player's latest recorded nflverse team is New Orleans Saints, which matches the scheduled game.",
         "Team matching is based on historical weekly stats, not an independently verified current roster.",
         "0 of 4 recorded games had zero passing yards.",
-        "Injuries, snap counts, defensive rankings, game spread, and game total are not verified."
+        "Injuries, snap counts, defensive rankings, game spread, and game total are not verified.",
+        "Minnesota Vikings historical defense through week 4 (4 games): 220.3 passing yards, 94.5 rushing yards, 220.3 receiving yards, and 16.8 receptions allowed per game, derived from nflverse weekly player statistics. These are team totals, not position-specific matchups or projected player outcomes."
       ],
+      "defensiveMatchup": {
+        "opponent": "MIN",
+        "gamesPlayed": 4,
+        "passingYardsAllowedPerGame": 220.3,
+        "rushingYardsAllowedPerGame": 94.5,
+        "receivingYardsAllowedPerGame": 220.3,
+        "receptionsAllowedPerGame": 16.8,
+        "latestWeek": 4,
+        "source": "nflverse player weekly statistics",
+        "verified": true
+      },
+      "opponentTeam": "Minnesota Vikings",
       "opportunityVerified": false,
       "verdict": "worth_researching",
-      "reason": "Tyler Shough has consistently exceeded the 237.5 passing yards line in his last four games, averaging 300.8 yards. His historical hit rate is 100%, with all four games surpassing the line by an average of 63.3 yards. However, the absence of injury updates and matchup specifics introduces uncertainty.",
-      "risks": "Injuries, snap counts, and defensive rankings are not verified, which could impact performance. Additionally, historical performance does not guarantee future results."
+      "reason": "Tyler Shough has consistently exceeded the 237.5 passing yards line in his last four games, averaging 300.8 yards with a historical hit rate of 100%. His recent performances (286, 255, 252, 410 yards) show a significant difference of 63.3 yards from the line. The Minnesota Vikings defense has allowed an average of 220.3 passing yards per game, which could indicate a favorable matchup.",
+      "risks": "Injuries, snap counts, and other factors affecting player performance are not verified. The matchup against the Vikings is based on historical data, not current defensive capabilities."
     },
     {
       "ticker": "SPORTSBOOK-cc52bba56e74f5cddbe9011046181c3d-cjstroud-RushingYards-fanduel-9.5-OVER",
@@ -367,7 +384,7 @@
       "homeTeam": "Tennessee Titans",
       "awayTeam": "Houston Texans",
       "gameTime": "2026-10-11T17:00:00Z",
-      "lastOddsUpdate": "2026-10-11T05:19:42Z",
+      "lastOddsUpdate": "2026-10-11T05:32:08Z",
       "sportsbookLines": [
         {
           "bookmaker": "DraftKings",
@@ -529,12 +546,25 @@
         "Team matching is based on historical weekly stats, not an independently verified current roster.",
         "0 of 4 recorded games had zero rushing yards.",
         "Rushing attempts and carry share are not available.",
-        "Injuries, snap counts, defensive rankings, game spread, and game total are not verified."
+        "Injuries, snap counts, defensive rankings, game spread, and game total are not verified.",
+        "Tennessee Titans historical defense through week 4 (4 games): 220.5 passing yards, 122.8 rushing yards, 220.5 receiving yards, and 20.5 receptions allowed per game, derived from nflverse weekly player statistics. These are team totals, not position-specific matchups or projected player outcomes."
       ],
+      "defensiveMatchup": {
+        "opponent": "TEN",
+        "gamesPlayed": 4,
+        "passingYardsAllowedPerGame": 220.5,
+        "rushingYardsAllowedPerGame": 122.8,
+        "receivingYardsAllowedPerGame": 220.5,
+        "receptionsAllowedPerGame": 20.5,
+        "latestWeek": 4,
+        "source": "nflverse player weekly statistics",
+        "verified": true
+      },
+      "opponentTeam": "Tennessee Titans",
       "opportunityVerified": false,
       "verdict": "worth_researching",
-      "reason": "C.J. Stroud has consistently surpassed the 9.5 rushing yards line in his last four games, averaging 16.5 yards. His historical hit rate is 100%, with an average exceeding the line by 7 yards. However, the lack of injury updates and rushing attempts data introduces uncertainty.",
-      "risks": "Injuries, snap counts, and defensive rankings are not verified, which could affect performance. Historical performance does not guarantee future results."
+      "reason": "C.J. Stroud has surpassed the 9.5 rushing yards line in all four of his recent games, averaging 16.5 yards. His recent performances (12, 10, 29, 15 yards) show a positive trend. The Tennessee Titans defense has allowed an average of 122.8 rushing yards per game, which may provide an opportunity for Stroud to continue this trend.",
+      "risks": "Injuries, snap counts, and other factors affecting player performance are not verified. The rushing attempts and carry share are also not available."
     },
     {
       "ticker": "SPORTSBOOK-cc52bba56e74f5cddbe9011046181c3d-xavierhutchinson-ReceivingYards-draftkings-15.5-OVER",
@@ -554,7 +584,7 @@
       "homeTeam": "Tennessee Titans",
       "awayTeam": "Houston Texans",
       "gameTime": "2026-10-11T17:00:00Z",
-      "lastOddsUpdate": "2026-10-11T05:20:06Z",
+      "lastOddsUpdate": "2026-10-11T05:32:32Z",
       "sportsbookLines": [
         {
           "bookmaker": "DraftKings",
@@ -752,12 +782,25 @@
         "Team matching is based on historical weekly stats, not an independently verified current roster.",
         "0 of 4 recorded games had zero receiving yards.",
         "Recorded targets, newest first: 5, 6, 9, 6. Average targets: 6.5.",
-        "Injuries, snap counts, defensive rankings, game spread, and game total are not verified."
+        "Injuries, snap counts, defensive rankings, game spread, and game total are not verified.",
+        "Tennessee Titans historical defense through week 4 (4 games): 220.5 passing yards, 122.8 rushing yards, 220.5 receiving yards, and 20.5 receptions allowed per game, derived from nflverse weekly player statistics. These are team totals, not position-specific matchups or projected player outcomes."
       ],
+      "defensiveMatchup": {
+        "opponent": "TEN",
+        "gamesPlayed": 4,
+        "passingYardsAllowedPerGame": 220.5,
+        "rushingYardsAllowedPerGame": 122.8,
+        "receivingYardsAllowedPerGame": 220.5,
+        "receptionsAllowedPerGame": 20.5,
+        "latestWeek": 4,
+        "source": "nflverse player weekly statistics",
+        "verified": true
+      },
+      "opponentTeam": "Tennessee Titans",
       "opportunityVerified": true,
       "verdict": "worth_researching",
-      "reason": "Xavier Hutchinson has exceeded the 15.5 receiving yards line in all four of his recent games, averaging 41.5 yards. His historical hit rate is 100%, with an average exceeding the line by 26 yards. The recorded targets indicate consistent involvement in the offense.",
-      "risks": "Injuries, snap counts, and defensive rankings are not verified, which could impact performance. Historical performance does not guarantee future results."
+      "reason": "Xavier Hutchinson has consistently exceeded the 15.5 receiving yards line in his last four games, averaging 41.5 yards. His recent performances (46, 51, 37, 32 yards) indicate a strong trend. The Tennessee Titans defense has allowed an average of 220.5 receiving yards per game, which could be favorable for Hutchinson.",
+      "risks": "Injuries, snap counts, and other factors affecting player performance are not verified. The opportunity for targets is also uncertain."
     },
     {
       "ticker": "SPORTSBOOK-2cda9bf0fbe35a2735f0dd8aaafe9eff-chrisolave-Receptions-draftkings-6.5-OVER",
@@ -777,7 +820,7 @@
       "homeTeam": "New Orleans Saints",
       "awayTeam": "Minnesota Vikings",
       "gameTime": "2026-10-11T17:00:00Z",
-      "lastOddsUpdate": "2026-10-11T05:20:00Z",
+      "lastOddsUpdate": "2026-10-11T05:32:31Z",
       "sportsbookLines": [
         {
           "bookmaker": "DraftKings",
@@ -975,167 +1018,144 @@
         "Team matching is based on historical weekly stats, not an independently verified current roster.",
         "0 of 4 recorded games had zero receptions.",
         "Recorded targets, newest first: 12, 13, 10, 13. Average targets: 12.",
-        "Injuries, snap counts, defensive rankings, game spread, and game total are not verified."
+        "Injuries, snap counts, defensive rankings, game spread, and game total are not verified.",
+        "Minnesota Vikings historical defense through week 4 (4 games): 220.3 passing yards, 94.5 rushing yards, 220.3 receiving yards, and 16.8 receptions allowed per game, derived from nflverse weekly player statistics. These are team totals, not position-specific matchups or projected player outcomes."
       ],
+      "defensiveMatchup": {
+        "opponent": "MIN",
+        "gamesPlayed": 4,
+        "passingYardsAllowedPerGame": 220.3,
+        "rushingYardsAllowedPerGame": 94.5,
+        "receivingYardsAllowedPerGame": 220.3,
+        "receptionsAllowedPerGame": 16.8,
+        "latestWeek": 4,
+        "source": "nflverse player weekly statistics",
+        "verified": true
+      },
+      "opponentTeam": "Minnesota Vikings",
       "opportunityVerified": true,
       "verdict": "worth_researching",
-      "reason": "Chris Olave has consistently surpassed the 6.5 receptions line in his last four games, averaging 8.8 receptions. His historical hit rate is 100%, with an average exceeding the line by 2.3 receptions. The recorded targets indicate a strong role in the passing game.",
-      "risks": "Injuries, snap counts, and defensive rankings are not verified, which could affect performance. Historical performance does not guarantee future results."
+      "reason": "Chris Olave has consistently exceeded the 6.5 receptions line in his last four games, averaging 8.8 receptions. His recent performances (8, 9, 8, 10 receptions) show a strong trend. The Minnesota Vikings defense has allowed an average of 16.8 receptions per game, which may indicate a favorable matchup.",
+      "risks": "Injuries, snap counts, and other factors affecting player performance are not verified. The matchup against the Vikings is based on historical data, not current defensive capabilities."
     },
     {
-      "ticker": "SPORTSBOOK-448d7cf18c6db4c811ed82ded1b72867-jaylenwarren-ReceivingYards-draftkings-20.5-OVER",
-      "player": "Jaylen Warren",
-      "playerTeam": "Pittsburgh Steelers",
-      "playerTeamAbbr": "PIT",
+      "ticker": "SPORTSBOOK-21b26266f3d78af02eb672e606275d95-willshipley-RushingReceivingYards-draftkings-52.5-UNDER",
+      "player": "Will Shipley",
+      "playerTeam": "Philadelphia Eagles",
+      "playerTeamAbbr": "PHI",
       "teamMatchVerified": true,
       "teamMatchSource": "nflverse latest recorded team vs sportsbook event",
-      "propType": "Receiving Yards",
-      "line": 20.5,
-      "side": "Over",
-      "odds": -112,
+      "propType": "Rushing + Receiving Yards",
+      "line": 52.5,
+      "side": "Under",
+      "odds": -111,
       "bookmaker": "DraftKings",
       "bookmakerKey": "draftkings",
       "source": "Sportsbook",
-      "eventId": "448d7cf18c6db4c811ed82ded1b72867",
-      "homeTeam": "Pittsburgh Steelers",
-      "awayTeam": "Indianapolis Colts",
-      "gameTime": "2026-10-11T17:00:00Z",
-      "lastOddsUpdate": "2026-10-11T05:19:36Z",
+      "eventId": "21b26266f3d78af02eb672e606275d95",
+      "homeTeam": "Jacksonville Jaguars",
+      "awayTeam": "Philadelphia Eagles",
+      "gameTime": "2026-10-11T13:30:00Z",
+      "lastOddsUpdate": "2026-10-11T05:32:01Z",
       "sportsbookLines": [
         {
           "bookmaker": "DraftKings",
-          "line": 20.5,
-          "overOdds": -112,
-          "underOdds": -112
+          "line": 52.5,
+          "overOdds": -115,
+          "underOdds": -111
         },
         {
           "bookmaker": "FanDuel",
-          "line": 20.5,
-          "overOdds": -113,
-          "underOdds": -113
+          "line": 52.5,
+          "overOdds": -115,
+          "underOdds": -111
         }
       ],
       "alternateLines": [
         {
-          "bookmaker": "FanDuel",
-          "line": 4.5,
-          "overOdds": -800,
-          "underOdds": null
-        },
-        {
-          "bookmaker": "FanDuel",
-          "line": 9.5,
-          "overOdds": -350,
-          "underOdds": null
-        },
-        {
-          "bookmaker": "DraftKings",
-          "line": 14.5,
-          "overOdds": -203,
-          "underOdds": null
-        },
-        {
-          "bookmaker": "FanDuel",
-          "line": 14.5,
-          "overOdds": -205,
-          "underOdds": null
-        },
-        {
-          "bookmaker": "FanDuel",
-          "line": 19.5,
-          "overOdds": -125,
-          "underOdds": null
-        },
-        {
-          "bookmaker": "DraftKings",
-          "line": 20.5,
-          "overOdds": -112,
-          "underOdds": null
-        },
-        {
           "bookmaker": "DraftKings",
           "line": 24.5,
-          "overOdds": 125,
-          "underOdds": null
-        },
-        {
-          "bookmaker": "FanDuel",
-          "line": 24.5,
-          "overOdds": 118,
-          "underOdds": null
-        },
-        {
-          "bookmaker": "FanDuel",
-          "line": 29.5,
-          "overOdds": 168,
+          "overOdds": -740,
           "underOdds": null
         },
         {
           "bookmaker": "DraftKings",
           "line": 39.5,
-          "overOdds": 373,
-          "underOdds": null
-        },
-        {
-          "bookmaker": "FanDuel",
-          "line": 39.5,
-          "overOdds": 300,
+          "overOdds": -241,
           "underOdds": null
         },
         {
           "bookmaker": "DraftKings",
           "line": 49.5,
-          "overOdds": 680,
+          "overOdds": -133,
           "underOdds": null
         },
         {
-          "bookmaker": "FanDuel",
-          "line": 49.5,
-          "overOdds": 490,
+          "bookmaker": "DraftKings",
+          "line": 52.5,
+          "overOdds": -114,
           "underOdds": null
         },
         {
           "bookmaker": "DraftKings",
           "line": 59.5,
-          "overOdds": 1180,
-          "underOdds": null
-        },
-        {
-          "bookmaker": "FanDuel",
-          "line": 59.5,
-          "overOdds": 750,
+          "overOdds": 124,
           "underOdds": null
         },
         {
           "bookmaker": "DraftKings",
           "line": 69.5,
-          "overOdds": 1980,
-          "underOdds": null
-        },
-        {
-          "bookmaker": "FanDuel",
-          "line": 69.5,
-          "overOdds": 1100,
+          "overOdds": 197,
           "underOdds": null
         },
         {
           "bookmaker": "DraftKings",
           "line": 79.5,
-          "overOdds": 3100,
+          "overOdds": 307,
           "underOdds": null
         },
         {
-          "bookmaker": "FanDuel",
-          "line": 79.5,
-          "overOdds": 1500,
+          "bookmaker": "DraftKings",
+          "line": 89.5,
+          "overOdds": 467,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "DraftKings",
+          "line": 99.5,
+          "overOdds": 700,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "DraftKings",
+          "line": 109.5,
+          "overOdds": 1040,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "DraftKings",
+          "line": 119.5,
+          "overOdds": 1520,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "DraftKings",
+          "line": 129.5,
+          "overOdds": 2100,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "DraftKings",
+          "line": 139.5,
+          "overOdds": 3000,
           "underOdds": null
         }
       ],
       "recentValues": [
-        33,
-        49,
-        34,
-        27
+        23,
+        11,
+        29,
+        12
       ],
       "recentWeeks": [
         4,
@@ -1146,60 +1166,74 @@
       "gameDetails": [
         {
           "week": 4,
-          "value": 33,
-          "targets": 6,
-          "receptions": 3,
-          "rushingYards": 93,
-          "receivingYards": 33,
+          "value": 23,
+          "targets": 1,
+          "receptions": 0,
+          "rushingYards": 23,
+          "receivingYards": 0,
           "passingYards": 0
         },
         {
           "week": 3,
-          "value": 49,
-          "targets": 4,
-          "receptions": 3,
-          "rushingYards": 127,
-          "receivingYards": 49,
+          "value": 11,
+          "targets": 2,
+          "receptions": 1,
+          "rushingYards": 0,
+          "receivingYards": 11,
           "passingYards": 0
         },
         {
           "week": 2,
-          "value": 34,
-          "targets": 4,
+          "value": 29,
+          "targets": 2,
           "receptions": 2,
-          "rushingYards": 43,
-          "receivingYards": 34,
+          "rushingYards": 24,
+          "receivingYards": 5,
           "passingYards": 0
         },
         {
           "week": 1,
-          "value": 27,
-          "targets": 6,
-          "receptions": 5,
-          "rushingYards": 46,
-          "receivingYards": 27,
+          "value": 12,
+          "targets": 1,
+          "receptions": 1,
+          "rushingYards": 4,
+          "receivingYards": 8,
           "passingYards": 0
         }
       ],
       "sampleSize": 4,
-      "average": 35.8,
+      "average": 18.8,
       "historicalHits": 4,
       "historicalHitRate": 100,
-      "differenceFromLine": 15.3,
+      "differenceFromLine": 33.8,
       "marketVolume": 0,
       "evidenceNotes": [
-        "The player's latest recorded nflverse team is Pittsburgh Steelers, which matches the scheduled game.",
+        "The player's latest recorded nflverse team is Philadelphia Eagles, which matches the scheduled game.",
         "Team matching is based on historical weekly stats, not an independently verified current roster.",
-        "0 of 4 recorded games had zero receiving yards.",
-        "Recorded targets, newest first: 6, 4, 4, 6. Average targets: 5.",
-        "Injuries, snap counts, defensive rankings, game spread, and game total are not verified."
+        "0 of 4 recorded games had zero rushing + receiving yards.",
+        "Recorded targets, newest first: 1, 2, 2, 1. Average targets: 1.5.",
+        "Rushing attempts and carry share are not available.",
+        "Injuries, snap counts, defensive rankings, game spread, and game total are not verified.",
+        "Jacksonville Jaguars historical defense through week 4 (4 games): 287.5 passing yards, 74.3 rushing yards, 291.5 receiving yards, and 23.8 receptions allowed per game, derived from nflverse weekly player statistics. These are team totals, not position-specific matchups or projected player outcomes."
       ],
-      "opportunityVerified": true,
+      "defensiveMatchup": {
+        "opponent": "JAX",
+        "gamesPlayed": 4,
+        "passingYardsAllowedPerGame": 287.5,
+        "rushingYardsAllowedPerGame": 74.3,
+        "receivingYardsAllowedPerGame": 291.5,
+        "receptionsAllowedPerGame": 23.8,
+        "latestWeek": 4,
+        "source": "nflverse player weekly statistics",
+        "verified": true
+      },
+      "opponentTeam": "Jacksonville Jaguars",
+      "opportunityVerified": false,
       "verdict": "worth_researching",
-      "reason": "Jaylen Warren has consistently exceeded the 20.5 receiving yards line in his last four games, averaging 35.8 yards. His historical hit rate is 100%, with an average exceeding the line by 15.3 yards. The recorded targets indicate a solid role in the passing game.",
-      "risks": "Injuries, snap counts, and defensive rankings are not verified, which could affect performance. Historical performance does not guarantee future results."
+      "reason": "Will Shipley has consistently fallen below the 52.5 rushing + receiving yards line in his last four games, averaging only 18.8 yards. His recent performances (23, 11, 29, 12 yards) indicate a strong trend towards the under. The Jacksonville Jaguars defense has allowed an average of 287.5 passing yards and 74.3 rushing yards per game, which may limit Shipley's opportunities.",
+      "risks": "Injuries, snap counts, and other factors affecting player performance are not verified. The opportunity for targets is also uncertain."
     }
   ],
-  "updatedAt": "2026-10-11T05:20:52.583Z",
-  "disclaimer": "AI-generated research uses recent historical results and quoted sportsbook prices. Player teams are matched using their latest recorded nflverse team, not live roster status. This is not a validated forecast, expected-value calculation, or guarantee of betting outcomes. Injuries and defensive matchups remain unverified. Odds and availability may change."
+  "updatedAt": "2026-10-11T05:33:22.087Z",
+  "disclaimer": "AI-generated research uses recent historical results and quoted sportsbook prices. Player teams are matched using their latest recorded nflverse team, not live roster status. This is not a validated forecast, expected-value calculation, or guarantee of betting outcomes. Historical opponent defensive team totals are included when available but are not position-specific or predictive. Injuries and current defensive personnel remain unverified. Odds and availability may change."
 }
