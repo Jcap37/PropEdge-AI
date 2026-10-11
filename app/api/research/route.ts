@@ -1,250 +1,136 @@
 
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
+import { getKalshiMarkets } from "../../../lib/kalshi";
+import {
+  getNFLStats,
+  type NFLPlayerGame,
+} from "../../../lib/nfl-stats";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-type PlayerGame = {
-  player: string;
-  team: string;
-  position: string;
-  season: number;
-  week: number;
-  passingYards: number | null;
-  rushingYards: number | null;
-  receivingYards: number | null;
-  receptions: number | null;
-  targets: number | null;
-};
-
-type PropMarket = {
-  ticker: string;
-  player: string;
-  propType: string;
-  line: number;
-  title?: string;
-  gameTime?: string | null;
-};
-
 function normalizeName(name: string) {
   return name
-    .normalize("NFKD")
-    .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
-    .replace(/\b(jr|sr|ii|iii|iv)\b/g, "")
     .replace(/[^a-z0-9]/g, "");
 }
 
-function getStat(game: PlayerGame, propType: string) {
-  const type = propType.toLowerCase();
-
-  if (type.includes("passing yards")) {
-    return game.passingYards;
-  }
-
-  if (type.includes("rushing yards")) {
-    return game.rushingYards;
-  }
-
-  if (type.includes("receiving yards")) {
-    return game.receivingYards;
-  }
-
-  if (type.includes("receptions")) {
-    return game.receptions;
-  }
-
-  return null;
-}
-
-async function fetchJSON(
-  url: string,
-  source: string
-) {
-  const response = await fetch(url, {
-    cache: "no-store",
-    headers: {
-      Accept: "application/json",
-    },
-  });
-
-  const text = await response.text();
-
-  if (!response.ok) {
-    throw new Error(
-      `${source} returned HTTP ${response.status}: ${text.slice(0, 120)}`
-    );
-  }
-
+export async function GET() {
   try {
-    return JSON.parse(text);
-  } catch {
-    throw new Error(
-      `${source} returned invalid JSON. Response begins: ${text.slice(0, 100)}`
-    );
-  }
-}
+    // Get data directly from shared functions.
+    // No internal HTTP requests or Vercel auth issues.
+    const [kalshi, nfl] = await Promise.all([
+      getKalshiMarkets(),
+      getNFLStats(),
+    ]);
 
-export async function GET(request: NextRequest) {
-  try {
-    const origin = request.nextUrl.origin;
-
-    const [marketData, statsData] =
-      await Promise.all([
-        fetchJSON(
-          `${origin}/api/kalshi`,
-          "Kalshi API"
-        ),
-        fetchJSON(
-          `${origin}/api/nfl-stats`,
-          "NFL Stats API"
-        ),
-      ]);
-
-    if (!marketData.success) {
-      throw new Error("Kalshi API reported failure");
-    }
-
-    if (!statsData.success) {
-      throw new Error("NFL Stats API reported failure");
-    }
-
-    const markets: PropMarket[] =
-      marketData.markets ?? [];
-
-    const games: PlayerGame[] =
-      statsData.players ?? [];
-
-    const season = statsData.season;
-
-    const playerIndex = new Map<
+    const gamesByPlayer = new Map<
       string,
-      PlayerGame[]
+      NFLPlayerGame[]
     >();
 
-    for (const game of games) {
-      if (game.season !== season) continue;
+    for (const game of nfl.players) {
+      if (game.position !== "QB") continue;
 
       const key = normalizeName(game.player);
-      const existing = playerIndex.get(key) ?? [];
+      const existing = gamesByPlayer.get(key) ?? [];
 
       existing.push(game);
-      playerIndex.set(key, existing);
+      gamesByPlayer.set(key, existing);
     }
 
-    for (const [key, playerGames] of playerIndex) {
-      playerGames.sort(
-        (a, b) =>
-          b.season - a.season ||
-          b.week - a.week
-      );
+    const research = kalshi.markets
+      .map((market) => {
+        if (market.line === null) return null;
 
-      playerIndex.set(
-        key,
-        playerGames.slice(0, 5)
-      );
-    }
+        const key = normalizeName(market.player);
 
-    const research = markets.flatMap((market) => {
-      if (
-        !market.player ||
-        !market.propType ||
-        !Number.isFinite(market.line)
-      ) {
-        return [];
-      }
+        const recentGames = (
+          gamesByPlayer.get(key) ?? []
+        )
+          .filter(
+            (game) =>
+              game.passingYards !== null &&
+              game.week <= nfl.latestWeek
+          )
+          .sort((a, b) => b.week - a.week)
+          .slice(0, 5);
 
-      const playerGames =
-        playerIndex.get(
-          normalizeName(market.player)
+        if (recentGames.length === 0) {
+          return null;
+        }
+
+        const yards = recentGames.map(
+          (game) => game.passingYards as number
         );
 
-      if (!playerGames?.length) {
-        return [];
-      }
-
-      const recentGames = playerGames
-        .map((game) => ({
-          week: game.week,
-          value: getStat(
-            game,
-            market.propType
-          ),
-        }))
-        .filter(
-          (
-            game
-          ): game is {
-            week: number;
-            value: number;
-          } =>
-            game.value !== null &&
-            Number.isFinite(game.value)
+        const total = yards.reduce(
+          (sum, value) => sum + value,
+          0
         );
 
-      if (!recentGames.length) {
-        return [];
-      }
+        const average = total / yards.length;
 
-      const values = recentGames.map(
-        (game) => game.value
-      );
+        // "250+" means 250 or more.
+        const hits = yards.filter(
+          (value) => value >= market.line!
+        ).length;
 
-      const total = values.reduce(
-        (sum, value) => sum + value,
-        0
-      );
+        const hitRate = hits / yards.length;
 
-      const recentAverage =
-        total / values.length;
-
-      const hits = values.filter(
-        (value) => value >= market.line
-      ).length;
-
-      return [
-        {
+        return {
+          id: market.id,
+          ticker: market.ticker,
           player: market.player,
-          team: playerGames[0].team,
-          position: playerGames[0].position,
           propType: market.propType,
           line: market.line,
-          platform: "Kalshi",
-          ticker: market.ticker,
-          gameTime: market.gameTime ?? null,
-          gamesAnalyzed: values.length,
-          recentGames,
-          recentAverage: Number(
-            recentAverage.toFixed(1)
-          ),
+          gameTime: market.gameTime,
+          sampleSize: yards.length,
+          recentPassingYards: yards,
+          averagePassingYards:
+            Math.round(average * 10) / 10,
           hits,
-          hitRate: Number(
-            (
-              (hits / values.length) *
-              100
-            ).toFixed(1)
-          ),
-          differenceFromLine: Number(
-            (
-              recentAverage - market.line
-            ).toFixed(1)
-          ),
-          analysisReady: false,
-        },
-      ];
-    });
+          hitRatePercent:
+            Math.round(hitRate * 100),
+          differenceFromLine:
+            Math.round(
+              (average - market.line) * 10
+            ) / 10,
+          marketVolume: market.volume,
+          evidence:
+            `${market.player} averaged ` +
+            `${average.toFixed(1)} passing yards ` +
+            `across ${yards.length} recent ` +
+            `recorded games and reached ` +
+            `${market.line}+ yards in ` +
+            `${hits} of those games.`,
+        };
+      })
+      .filter(
+        (item): item is NonNullable<
+          typeof item
+        > => item !== null
+      )
+      .sort(
+        (a, b) =>
+          b.marketVolume - a.marketVolume
+      );
 
     return NextResponse.json({
       success: true,
-      source: "nflverse + Kalshi",
-      season,
-      latestWeek:
-        statsData.latestWeek ?? null,
-      marketsChecked: markets.length,
+      source: {
+        markets: "Kalshi",
+        statistics: "nflverse",
+      },
+      season: nfl.season,
+      latestWeek: nfl.latestWeek,
+      marketsChecked: kalshi.count,
       count: research.length,
       research,
-      recommendationsReady: false,
       updatedAt: new Date().toISOString(),
+      disclaimer:
+        "Historical hit rates are descriptive, " +
+        "not predictions of future outcomes.",
     });
   } catch (error) {
     return NextResponse.json(
@@ -255,7 +141,7 @@ export async function GET(request: NextRequest) {
         error:
           error instanceof Error
             ? error.message
-            : "Research API failed",
+            : "Research failed",
       },
       { status: 500 }
     );
