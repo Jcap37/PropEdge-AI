@@ -59,13 +59,15 @@ async function fetchSeries(
   const allMarkets: KalshiMarket[] = [];
   let cursor = "";
 
-  // Allow more pages than the original route.
   for (let page = 0; page < 10; page++) {
     const url = new URL(`${BASE_URL}/markets`);
 
     url.searchParams.set("limit", "100");
     url.searchParams.set("status", "open");
-    url.searchParams.set("series_ticker", seriesTicker);
+    url.searchParams.set(
+      "series_ticker",
+      seriesTicker
+    );
 
     if (cursor) {
       url.searchParams.set("cursor", cursor);
@@ -85,7 +87,6 @@ async function fetchSeries(
       (await response.json()) as MarketsResponse;
 
     allMarkets.push(...(data.markets ?? []));
-
     cursor = data.cursor ?? "";
 
     if (!cursor) break;
@@ -99,12 +100,14 @@ function parseMarket(
   seriesTicker: string,
   propType: string
 ): MarketOutput | null {
-  if (!market.ticker.startsWith(`${seriesTicker}-`)) {
+  if (
+    !market.ticker.startsWith(
+      `${seriesTicker}-`
+    )
+  ) {
     return null;
   }
 
-  // Kalshi threshold markets generally use:
-  // "Player Name: 75+ rushing and receiving yards"
   const match = market.title.match(
     /^(.+?):\s*(\d+(?:\.\d+)?)\+\s*(.+)$/i
   );
@@ -117,25 +120,39 @@ function parseMarket(
     .trim()
     .toLowerCase();
 
-  if (!player || !Number.isFinite(line)) {
+  if (
+    !player ||
+    !Number.isFinite(line)
+  ) {
     return null;
   }
 
-  if (seriesTicker === "KXNFLPASSYDS") {
-    if (marketDescription !== "passing yards") {
+  if (
+    seriesTicker === "KXNFLPASSYDS"
+  ) {
+    if (
+      marketDescription !== "passing yards"
+    ) {
       return null;
     }
   }
 
-  if (seriesTicker === "KXNFLRRYDS") {
+  if (
+    seriesTicker === "KXNFLRRYDS"
+  ) {
     const acceptedDescriptions = [
       "rushing and receiving yards",
+      "rushing and receiving yards combined",
       "rushing + receiving yards",
+      "rushing + receiving yards combined",
       "rushing & receiving yards",
+      "rushing & receiving yards combined",
     ];
 
     if (
-      !acceptedDescriptions.includes(marketDescription)
+      !acceptedDescriptions.includes(
+        marketDescription
+      )
     ) {
       return null;
     }
@@ -144,91 +161,121 @@ function parseMarket(
   return {
     id: market.ticker,
     ticker: market.ticker,
-    eventTicker: market.event_ticker ?? null,
+    eventTicker:
+      market.event_ticker ?? null,
     title: market.title,
     question: market.title,
     player,
     sport: "NFL",
     propType,
     line,
-    yesBid: market.yes_bid_dollars ?? null,
-    yesAsk: market.yes_ask_dollars ?? null,
-    lastPrice: market.last_price_dollars ?? null,
-    volume: Number(market.volume_fp ?? 0),
+    yesBid:
+      market.yes_bid_dollars ?? null,
+    yesAsk:
+      market.yes_ask_dollars ?? null,
+    lastPrice:
+      market.last_price_dollars ?? null,
+    volume: Number(
+      market.volume_fp ?? 0
+    ),
     gameTime:
       market.occurrence_datetime ?? null,
-    closeTime: market.close_time ?? null,
+    closeTime:
+      market.close_time ?? null,
   };
 }
 
 export async function GET() {
   try {
-    const results = await Promise.allSettled(
-      SERIES.map(async (series) => {
-        const rawMarkets = await fetchSeries(
-          series.ticker
-        );
+    const results =
+      await Promise.allSettled(
+        SERIES.map(async (series) => {
+          const rawMarkets =
+            await fetchSeries(
+              series.ticker
+            );
 
-        return rawMarkets
-          .map((market) =>
-            parseMarket(
-              market,
-              series.ticker,
-              series.propType
+          return rawMarkets
+            .map((market) =>
+              parseMarket(
+                market,
+                series.ticker,
+                series.propType
+              )
             )
-          )
-          .filter(
-            (market): market is MarketOutput =>
-              market !== null
-          );
-      })
-    );
+            .filter(
+              (
+                market
+              ): market is MarketOutput =>
+                market !== null
+            );
+        })
+      );
 
     const markets: MarketOutput[] = [];
     const errors: string[] = [];
 
-    results.forEach((result, index) => {
-      if (result.status === "fulfilled") {
-        markets.push(...result.value);
-      } else {
-        errors.push(
-          `${SERIES[index].ticker}: ${
-            result.reason instanceof Error
-              ? result.reason.message
-              : "Unable to load"
-          }`
-        );
+    results.forEach(
+      (result, index) => {
+        if (
+          result.status === "fulfilled"
+        ) {
+          markets.push(
+            ...result.value
+          );
+        } else {
+          errors.push(
+            `${SERIES[index].ticker}: ${
+              result.reason instanceof Error
+                ? result.reason.message
+                : "Unable to load"
+            }`
+          );
+        }
       }
-    });
+    );
 
-    if (results.every(
-      (result) => result.status === "rejected"
-    )) {
+    if (
+      results.every(
+        (result) =>
+          result.status === "rejected"
+      )
+    ) {
       throw new Error(
         errors.join("; ") ||
-        "Unable to load Kalshi markets."
+          "Unable to load Kalshi markets."
       );
     }
 
-    // Remove duplicate market tickers.
-    const uniqueMarkets = Array.from(
-      new Map(
-        markets.map((market) => [
-          market.ticker,
-          market,
-        ])
-      ).values()
-    );
+    const uniqueMarkets =
+      Array.from(
+        new Map(
+          markets.map((market) => [
+            market.ticker,
+            market,
+          ])
+        ).values()
+      );
 
     uniqueMarkets.sort(
-      (a, b) => b.volume - a.volume
+      (a, b) =>
+        b.volume - a.volume
     );
 
-    const byPropType: Record<string, number> = {};
+    const byPropType: Record<
+      string,
+      number
+    > = {};
 
-    for (const market of uniqueMarkets) {
-      byPropType[market.propType] =
-        (byPropType[market.propType] ?? 0) + 1;
+    for (
+      const market of uniqueMarkets
+    ) {
+      byPropType[
+        market.propType
+      ] =
+        (byPropType[
+          market.propType
+        ] ?? 0) + 1;
     }
 
     return NextResponse.json({
@@ -236,14 +283,19 @@ export async function GET() {
       source: "Kalshi",
       sport: "NFL",
       propType: "Multiple",
-      seriesTickers: SERIES.map(
-        (series) => series.ticker
-      ),
-      count: uniqueMarkets.length,
+      seriesTickers:
+        SERIES.map(
+          (series) =>
+            series.ticker
+        ),
+      count:
+        uniqueMarkets.length,
       byPropType,
-      markets: uniqueMarkets,
+      markets:
+        uniqueMarkets,
       warnings: errors,
-      updatedAt: new Date().toISOString(),
+      updatedAt:
+        new Date().toISOString(),
     });
   } catch (error) {
     return NextResponse.json(
@@ -256,7 +308,9 @@ export async function GET() {
             ? error.message
             : "Unable to load markets",
       },
-      { status: 500 }
+      {
+        status: 500,
+      }
     );
   }
 }
