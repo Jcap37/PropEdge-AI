@@ -9,7 +9,6 @@ const SEASON = 2026;
 const DATA_URL =
   `https://github.com/nflverse/nflverse-data/releases/download/stats_player/stats_player_week_${SEASON}.csv`;
 
-// Parse CSV correctly, including quoted values.
 function parseCSV(text: string): string[][] {
   const rows: string[][] = [];
   let row: string[] = [];
@@ -38,6 +37,7 @@ function parseCSV(text: string): string[][] {
       }
 
       row.push(field);
+
       if (row.some((value) => value !== "")) {
         rows.push(row);
       }
@@ -89,16 +89,34 @@ export async function GET() {
       return column >= 0 ? row[column] ?? "" : "";
     };
 
-    const number = (row: string[], name: string) => {
+    const getFirst = (
+      row: string[],
+      names: string[]
+    ) => {
+      for (const name of names) {
+        const value = get(row, name);
+        if (value !== "") return value;
+      }
+
+      return "";
+    };
+
+    const number = (
+      row: string[],
+      name: string
+    ): number | null => {
       const value = get(row, name);
-      return value === "" ? null : Number(value);
+
+      if (value === "") return null;
+
+      const parsed = Number(value);
+      return Number.isFinite(parsed) ? parsed : null;
     };
 
     const required = [
       "season",
       "week",
       "player_display_name",
-      "recent_team",
       "position",
       "passing_yards",
       "rushing_yards",
@@ -124,10 +142,20 @@ export async function GET() {
       )
       .map((row) => ({
         player: get(row, "player_display_name"),
-        team: get(row, "recent_team"),
+
+        team:
+          getFirst(row, [
+            "recent_team",
+            "team",
+            "team_name",
+            "team_abbr",
+        ]) || "Unknown",
+
         position: get(row, "position"),
+
         season: number(row, "season"),
         week: number(row, "week"),
+
         passingYards: number(row, "passing_yards"),
         rushingYards: number(row, "rushing_yards"),
         receivingYards: number(row, "receiving_yards"),
