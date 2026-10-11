@@ -13,6 +13,7 @@ import {
   Search,
   ShieldAlert,
   Sparkles,
+  Target,
 } from "lucide-react";
 
 type Market = {
@@ -82,6 +83,8 @@ type AnalysisResponse = {
     analysis?: string;
   };
   recommendations?: Recommendation[];
+  highConfidenceRecommendations?: Recommendation[];
+  confidenceMethodology?: string;
   updatedAt?: string;
   error?: string;
   published?: boolean;
@@ -556,6 +559,8 @@ export default function Home() {
     Recommendation[]
   >([]);
 
+  const [highConfidenceRecommendations, setHighConfidenceRecommendations] = useState<Recommendation[]>([]);
+  const [confidenceMethodology, setConfidenceMethodology] = useState("");
   const [analysisLoading, setAnalysisLoading] = useState(false);
   const [analysisError, setAnalysisError] = useState("");
   const [analysisUpdatedAt, setAnalysisUpdatedAt] = useState("");
@@ -595,6 +600,12 @@ export default function Home() {
 
       latestReportRef.current = data;
       setRecommendations(data.recommendations ?? []);
+      setHighConfidenceRecommendations(
+        Array.isArray(data.highConfidenceRecommendations)
+          ? data.highConfidenceRecommendations
+          : []
+      );
+      setConfidenceMethodology(data.confidenceMethodology ?? "");
       setAnalysisUpdatedAt(data.updatedAt ?? "");
       setAnalysisAttempted(true);
       setReportSource(
@@ -809,6 +820,47 @@ export default function Home() {
             Refresh Markets
           </button>
         </header>
+
+        <section className="mb-10" aria-labelledby="confidence-heading">
+          <div className="mb-4 flex flex-wrap items-center gap-3">
+            <h2 id="confidence-heading" className="flex items-center gap-2 text-2xl font-bold">
+              <Target size={22} className="text-emerald-400" />
+              Highest-Confidence Research Picks
+            </h2>
+            <span className="rounded-full border border-[#365244] bg-[#19271e] px-3 py-1 text-xs text-emerald-300">
+              Strict qualification
+            </span>
+          </div>
+          <p className="mb-4 text-sm leading-6 text-[#999]">
+            A separate shortlist for props that pass additional evidence checks.
+            Confidence is a research classification, not a verified probability of winning.
+            Picks are never added just to fill the section.
+          </p>
+          {confidenceMethodology && (
+            <p className="mb-4 rounded-xl border border-[#303030] bg-[#121212] p-4 text-xs leading-5 text-[#aaa]">
+              Qualification criteria: {confidenceMethodology}
+            </p>
+          )}
+          {highConfidenceRecommendations.length > 0 ? (
+            <div className="grid gap-4 md:grid-cols-2">
+              {highConfidenceRecommendations.map((item, index) => (
+                <RecommendationCard
+                  key={`confidence-${item.ticker}-${index}`}
+                  item={item}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-[#303030] bg-[#111] p-6">
+              <p className="font-semibold text-white">No qualified picks published yet</p>
+              <p className="mt-2 text-sm leading-6 text-[#999]">
+                The analyzer must explicitly publish a verified high-confidence shortlist.
+                Existing Top AI Player Props are not automatically promoted.
+                Once the v11 analyzer is connected, qualifying picks will appear here.
+              </p>
+            </div>
+          )}
+        </section>
 
         <section className="mb-10">
           <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
