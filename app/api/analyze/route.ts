@@ -334,6 +334,30 @@ function headToHeadExplanation(candidate: Candidate): string {
     `These are historical comparisons to today's line, not the lines offered in those past games.`;
 }
 
+// v11.2: Prior meetings are a context signal, never an estimated win probability.
+// Require at least three games before adjusting ranking or excluding a shortlist pick.
+function headToHeadSignal(candidate: Candidate): {
+  meetings: number;
+  hits: number;
+  hitShare: number | null;
+  stronglyContradictory: boolean;
+  adjustment: number;
+} {
+  const meetings = candidate.headToHead.length;
+  const hits = candidate.headToHead.filter((game) =>
+    historicalHit(headToHeadStat(game, candidate.propType), candidate.line, candidate.side)
+  ).length;
+  if (meetings < 3) {
+    return { meetings, hits, hitShare: null, stronglyContradictory: false, adjustment: 0 };
+  }
+  const hitShare = hits / meetings;
+  // 1/6 for Purdy and 2/5 for Sutton both contradict their recent streaks.
+  const stronglyContradictory = hitShare <= 0.4;
+  // Capped, deliberately modest ranking effects; H2H is not predictive by itself.
+  const adjustment = stronglyContradictory ? -0.08 : hitShare >= 0.75 ? 0.02 : 0;
+  return { meetings, hits, hitShare, stronglyContradictory, adjustment };
+}
+
 type Recommendation = Candidate & {
   verdict: Verdict;
   reason: string;
@@ -795,7 +819,8 @@ function candidateScore(candidate: Candidate): number {
     Math.min(relativeDifference, 1) * 0.2 +
     consistency * 0.15 +
     candidate.defensiveRankingAdjustment +
-    (opponentDistribution(candidate)?.adjustment ?? 0)
+    (opponentDistribution(candidate)?.adjustment ?? 0) +
+    headToHeadSignal(candidate).adjustment
   );
 }
 
@@ -807,10 +832,13 @@ const CONFIDENCE_METHODOLOGY =
   "a directional average at least 15% beyond that line, verified position-specific " +
   "defense that is not materially unfavorable, and no strongly conflicting " +
   "same-position opponent distribution. Receiving props also require " +
-  "consistent recorded targets. These are screening criteria, NOT predicted win probabilities.";
+  "consistent recorded targets. At least 3 prior head-to-head meetings with 40% or " +
+  "fewer historical hits at today's line disqualify a high-confidence pick; 0-2 " +
+  "meetings are informational only. These are screening criteria, NOT predicted win probabilities.";
 
 function qualifiesForHighConfidence(candidate: Recommendation): boolean {
   if (candidate.verdict !== "worth_researching") return false;
+  if (headToHeadSignal(candidate).stronglyContradictory) return false;
   if (!candidate.teamMatchVerified || candidate.sampleSize < 4) return false;
   if (candidate.historicalHits !== candidate.sampleSize) return false;
   if (candidate.recentValues.length !== candidate.sampleSize) return false;
@@ -1710,17 +1738,18 @@ async function generateAnalysis() {
     defensiveLeagueBaselineAvailable: defenseBaselineAvailable,
     defensiveLeagueBaseline: null,
     defensivePositionSpecificEnabled: true,
-    rankingVersion: 11.1,
+    rankingVersion: 11.2,
     headToHeadEnabled: true,
     headToHeadWarnings: headToHeadResult.warnings,
     confidenceMethodology: CONFIDENCE_METHODOLOGY,
-    highConfidenceCriteriaVersion: 1,
+    highConfidenceCriteriaVersion: 2,
+    headToHeadSelectionEnabled: true,
     distributionConflicts,
     individualOpponentDistributionEnabled: true,
     excludedForStrongDefensiveMatchup,
     recentIndividualOpponentContextEnabled: true,
     rankingDescription:
-      "Historical player evidence, capped position-defense context, and sample-gated individual opponent distribution penalties; not a calibrated probability or expected-value model.",
+      "Historical player evidence, capped position-defense context, sample-gated individual opponent distribution, and cautiously weighted prior player-vs-opponent meetings; not a calibrated probability or expected-value model.",
     defensiveDataWarning: defenseResult.error || null,
     defensiveMatchupsVerified: selected.filter(
       (candidate) => candidate.positionDefensiveMatchup !== null
@@ -2107,7 +2136,7 @@ Allowed verdicts:
 // v11 adds a separately qualified high-confidence research shortlist.
 const getCachedAnalysis = unstable_cache(
   generateAnalysis,
-  ["propedge-ai-analysis-v11-confidence"],
+  ["propedge-ai-analysis-v11-2-h2h-screen"],
   {
     revalidate: CACHE_SECONDS,
     tags: ["propedge-ai-analysis-v11"],
