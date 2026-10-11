@@ -501,6 +501,95 @@ function AnalysisBreakdown({ reason }: { reason: string }) {
   );
 }
 
+type SupportVerdict = {
+  label: "Strong Support" | "Mixed Evidence" | "Weak Support" | "Insufficient Data";
+  explanation: string;
+  tone: "green" | "amber" | "red" | "neutral";
+};
+
+// A conservative, descriptive screen of the already-published statistics.
+// It is not a probability model, and does not change the analyzer's picks.
+function getSupportVerdict(item: Recommendation): SupportVerdict {
+  const sections = splitAnalysisSections(item.reason);
+  const history = sections.find((section) => section.kind === "history")?.content ?? "";
+  const defense = sections.find((section) => section.kind === "defense")?.content ?? "";
+  const opponents = sections.find((section) => section.kind === "opponents")?.content ?? "";
+  const hits = item.historicalHits;
+  const games = item.sampleSize;
+  const hitRate = games > 0 ? hits / games : 0;
+  const matchupPositive = /historically more favorable for an? (?:Over|Under)/i.test(defense);
+  const matchupNegative = /historically less favorable for an? (?:Over|Under)/i.test(defense);
+  const h2h = /(?:\d+(?:\.\d+)?\s*;\s*)?(\d+) of (\d+) would have finished (?:over|under)/i.exec(history);
+  const h2hHits = h2h ? Number(h2h[1]) : null;
+  const h2hGames = h2h ? Number(h2h[2]) : null;
+  const contraryH2H = h2hGames !== null && h2hGames >= 3 && h2hHits !== null && h2hHits / h2hGames <= 0.4;
+  const supportiveH2H = h2hGames !== null && h2hGames >= 3 && h2hHits !== null && h2hHits / h2hGames >= 0.6;
+  const opposingWarning = /strong negative individual-opponent|distribution is unfavorable|strong mismatch/i.test(opponents) &&
+    !/no strong negative individual-opponent/i.test(opponents);
+
+  if (games < 4 || !Number.isFinite(hitRate) || (!matchupPositive && !matchupNegative)) {
+    return {
+      label: "Insufficient Data", tone: "neutral",
+      explanation: "Not enough verified recent-game and position-specific matchup evidence to assign a support level.",
+    };
+  }
+  if (hitRate < 0.5 || (contraryH2H && (matchupNegative || hitRate < 0.75))) {
+    return {
+      label: "Weak Support", tone: "red",
+      explanation: contraryH2H
+        ? `Only ${h2hHits} of ${h2hGames} previous meetings cleared today's line, conflicting with this pick.`
+        : `Only ${hits} of ${games} recent games cleared the line; recent results do not strongly support this pick.`,
+    };
+  }
+  if (contraryH2H || matchupNegative || opposingWarning || hitRate < 0.75) {
+    const conflicts: string[] = [];
+    if (contraryH2H) conflicts.push(`only ${h2hHits}/${h2hGames} previous meetings cleared today's line`);
+    if (matchupNegative) conflicts.push("the opponent's position-specific allowance is historically unfavorable");
+    if (opposingWarning) conflicts.push("other-player matchup results raise concerns");
+    if (hitRate < 0.75) conflicts.push(`recent results cleared the line in ${hits}/${games} games`);
+    return {
+      label: "Mixed Evidence", tone: "amber",
+      explanation: `Some evidence supports the pick, but ${conflicts.join("; ")}.`,
+    };
+  }
+  if (matchupPositive && hitRate >= 0.75 && !contraryH2H && !opposingWarning) {
+    return {
+      label: "Strong Support", tone: "green",
+      explanation: `${hits} of ${games} recent games cleared the line, and the position-specific defensive matchup is historically favorable.${supportiveH2H ? ` Previous meetings also support the pick (${h2hHits}/${h2hGames}).` : ""}`,
+    };
+  }
+  return {
+    label: "Mixed Evidence", tone: "amber",
+    explanation: "The available historical signals do not consistently point in the same direction.",
+  };
+}
+
+function VerdictPanel({ item }: { item: Recommendation }) {
+  const verdict = getSupportVerdict(item);
+  const styles = {
+    green: "border-emerald-900/70 bg-[#14231c] text-emerald-300",
+    amber: "border-amber-900/70 bg-[#282116] text-amber-200",
+    red: "border-red-900/70 bg-[#2b1919] text-red-300",
+    neutral: "border-[#424242] bg-[#202020] text-[#ddd]",
+  };
+  return (
+    <section className={`mb-4 rounded-xl border p-4 ${styles[verdict.tone]}`} aria-label="Evidence verdict">
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+        <h4 className="flex items-center gap-2 text-sm font-semibold">
+          <Target size={16} /> Evidence Verdict
+        </h4>
+        <span className="rounded-full border border-current/30 px-3 py-1 text-xs font-semibold">
+          {verdict.label}
+        </span>
+      </div>
+      <p className="text-sm leading-6 text-[#ddd]">{verdict.explanation}</p>
+      <p className="mt-2 text-xs leading-5 text-[#aaa]">
+        Descriptive historical screening only — not a predicted win probability or betting edge.
+      </p>
+    </section>
+  );
+}
+
 function RecommendationCard({
   item,
 }: {
@@ -553,6 +642,8 @@ function RecommendationCard({
           {item.awayTeam} at {item.homeTeam}
         </p>
       )}
+
+      <VerdictPanel item={item} />
 
       <div className="mb-4 grid grid-cols-3 gap-2">
         <div className="rounded-lg bg-[#1e1e1e] p-3">
