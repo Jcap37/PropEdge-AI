@@ -11,7 +11,7 @@
   "sportsbookEventsChecked": 16,
   "sportsbookEventsAvailable": 23,
   "sportsbookMainLinesChecked": 863,
-  "sportsbookAlternateLinesChecked": 7888,
+  "sportsbookAlternateLinesChecked": 7900,
   "excludedForWeakEvidence": 91,
   "excludedForTeamMismatch": 0,
   "excludedForAmbiguousPlayer": 0,
@@ -27,14 +27,14 @@
   "defensiveLeagueBaselineAvailable": true,
   "defensiveLeagueBaseline": null,
   "defensivePositionSpecificEnabled": true,
-  "rankingVersion": 9,
+  "rankingVersion": 9.1,
   "rankingDescription": "Historical player evidence plus capped position-specific opponent-vs-league defensive context; not a calibrated probability or expected-value model.",
   "defensiveDataWarning": null,
   "defensiveMatchupsVerified": 20,
-  "count": 5,
+  "count": 4,
   "recommendationsByPropType": {
     "Rushing Yards": 1,
-    "Receiving Yards": 3,
+    "Receiving Yards": 2,
     "Receptions": 1
   },
   "recommendations": [
@@ -56,7 +56,7 @@
       "homeTeam": "Seattle Seahawks",
       "awayTeam": "San Francisco 49ers",
       "gameTime": "2026-10-11T20:25:00Z",
-      "lastOddsUpdate": "2026-10-11T16:34:38Z",
+      "lastOddsUpdate": "2026-10-11T16:48:23Z",
       "sportsbookLines": [
         {
           "bookmaker": "DraftKings",
@@ -1077,8 +1077,8 @@
       "defensiveComparison": "RB-only opponent allowance: 76.3 rushing yards per game vs league 92.3 (below league average; rank 26 of 32 (1 = most allowed)); last 4 recorded opponent games: 4 featured at least one RB player over 12.5 rushing yards. Group allowance is shared across players and does not predict one player's result. Ranking adjustment -3.5 points is descriptive, not win probability.",
       "opportunityVerified": false,
       "verdict": "worth_researching",
-      "reason": "Kaelon Black has shown a strong performance with an average of 30 rushing yards over the last four games, exceeding the 12.5 line in three of them. The Seattle Seahawks allow an average of 76.3 rushing yards to RBs, which is below the league average of 92.3, indicating a favorable matchup for an OVER. However, the recent performances of other RBs against the Seahawks suggest variability in outcomes.",
-      "risks": "Injuries and snap counts are not verified, and rushing attempts are not available."
+      "reason": "Kaelon Black recorded rushing yards of week 4: 13, week 3: 17, week 2: 25, week 1: 65. That is 4 of 4 recorded games over the 12.5 FanDuel main line (-113), with a 30 per-game average. Seattle Seahawks allowed 76.3 rushing yards per game to opposing RBs combined across 4 games, versus a 92.3 league average. This is historically less favorable for an Over, based on position-group history, not an individual-player forecast. Rank 26 of 32 (1 allows most). Historical hit rates are not future probabilities; player availability and usage remain unverified.",
+      "risks": "Injuries, snap counts, and other factors affecting player performance are not verified. The group allowance for rushing yards is shared among multiple players, which could dilute individual opportunities."
     },
     {
       "ticker": "SPORTSBOOK-cc52bba56e74f5cddbe9011046181c3d-xavierhutchinson-ReceivingYards-fanduel-14.5-OVER",
@@ -1098,7 +1098,7 @@
       "homeTeam": "Tennessee Titans",
       "awayTeam": "Houston Texans",
       "gameTime": "2026-10-11T17:00:00Z",
-      "lastOddsUpdate": "2026-10-11T16:34:46Z",
+      "lastOddsUpdate": "2026-10-11T16:47:58Z",
       "sportsbookLines": [
         {
           "bookmaker": "DraftKings",
@@ -1159,7 +1159,7 @@
         {
           "bookmaker": "FanDuel",
           "line": 24.5,
-          "overOdds": 178,
+          "overOdds": 182,
           "underOdds": null
         },
         {
@@ -1177,7 +1177,7 @@
         {
           "bookmaker": "FanDuel",
           "line": 39.5,
-          "overOdds": 390,
+          "overOdds": 400,
           "underOdds": null
         },
         {
@@ -1213,7 +1213,7 @@
         {
           "bookmaker": "FanDuel",
           "line": 69.5,
-          "overOdds": 1260,
+          "overOdds": 1280,
           "underOdds": null
         },
         {
@@ -2203,8 +2203,8 @@
       "defensiveComparison": "WR-only opponent allowance: 167 receiving yards per game vs league 152.1 (above league average; rank 9 of 32 (1 = most allowed)); last 4 recorded opponent games: 4 featured at least one WR player over 14.5 receiving yards. Group allowance is shared across players and does not predict one player's result. Ranking adjustment +2 points is descriptive, not win probability.",
       "opportunityVerified": true,
       "verdict": "worth_researching",
-      "reason": "Xavier Hutchinson has consistently exceeded the 14.5 receiving yards line, averaging 41.5 yards in his last four games. The Tennessee Titans allow 167 receiving yards per game to WRs, which is above the league average of 152.1, suggesting a favorable matchup. His recent target volume also supports the potential for hitting the OVER.",
-      "risks": "Injuries and snap counts are not verified, and the overall effectiveness of the Titans' defense against WRs is not independently confirmed."
+      "reason": "Xavier Hutchinson recorded receiving yards of week 4: 46, week 3: 51, week 2: 37, week 1: 32. That is 4 of 4 recorded games over the 14.5 FanDuel main line (-113), with a 41.5 per-game average. Tennessee Titans allowed 167 receiving yards per game to opposing WRs combined across 4 games, versus a 152.1 league average. This is historically more favorable for an Over, based on position-group history, not an individual-player forecast. Rank 9 of 32 (1 allows most). Historical hit rates are not future probabilities; player availability and usage remain unverified.",
+      "risks": "Injuries, snap counts, and other factors affecting player performance are not verified. The group allowance for receiving yards is shared among multiple players, which could impact individual performance."
     },
     {
       "ticker": "SPORTSBOOK-f8e7f43f73aa983c5c99c189587f0118-tylerallgeier-Receptions-draftkings-1.5-OVER",
@@ -2224,7 +2224,7 @@
       "homeTeam": "Arizona Cardinals",
       "awayTeam": "Detroit Lions",
       "gameTime": "2026-10-11T20:25:00Z",
-      "lastOddsUpdate": "2026-10-11T16:34:08Z",
+      "lastOddsUpdate": "2026-10-11T16:48:20Z",
       "sportsbookLines": [
         {
           "bookmaker": "DraftKings",
@@ -3209,8 +3209,8 @@
       "defensiveComparison": "RB-only opponent allowance: 4.3 receptions per game vs league 4.4 (below league average; rank 16 of 32 (1 = most allowed)); last 4 recorded opponent games: 2 featured at least one RB player over 1.5 receptions. Group allowance is shared across players and does not predict one player's result. Ranking adjustment -0.5 points is descriptive, not win probability.",
       "opportunityVerified": true,
       "verdict": "worth_researching",
-      "reason": "Tyler Allgeier has recorded an average of 2.5 receptions over his last four games, exceeding the 1.5 line consistently. The Detroit Lions allow 4.3 receptions per game to RBs, which is slightly below the league average of 4.4, indicating a reasonable chance for an OVER. His recent target volume also supports this line.",
-      "risks": "Injuries and snap counts are not verified, and the overall effectiveness of the Lions' defense against RBs is not independently confirmed."
+      "reason": "Tyler Allgeier recorded receptions of week 4: 2, week 3: 4, week 2: 2, week 1: 2. That is 4 of 4 recorded games over the 1.5 DraftKings main line (-162), with a 2.5 per-game average. Detroit Lions allowed 4.3 receptions per game to opposing RBs combined across 4 games, versus a 4.4 league average. This is historically less favorable for an Over, based on position-group history, not an individual-player forecast. Rank 16 of 32 (1 allows most). Historical hit rates are not future probabilities; player availability and usage remain unverified.",
+      "risks": "Injuries, snap counts, and other factors affecting player performance are not verified. The group allowance for receptions is shared among multiple players, which could affect individual opportunities."
     },
     {
       "ticker": "SPORTSBOOK-448d7cf18c6db4c811ed82ded1b72867-jaylenwarren-ReceivingYards-fanduel-20.5-OVER",
@@ -3230,7 +3230,7 @@
       "homeTeam": "Pittsburgh Steelers",
       "awayTeam": "Indianapolis Colts",
       "gameTime": "2026-10-11T17:00:00Z",
-      "lastOddsUpdate": "2026-10-11T16:34:37Z",
+      "lastOddsUpdate": "2026-10-11T16:48:30Z",
       "sportsbookLines": [
         {
           "bookmaker": "DraftKings",
@@ -3267,7 +3267,7 @@
         {
           "bookmaker": "FanDuel",
           "line": 14.5,
-          "overOdds": -200,
+          "overOdds": -198,
           "underOdds": null
         },
         {
@@ -3291,7 +3291,7 @@
         {
           "bookmaker": "FanDuel",
           "line": 24.5,
-          "overOdds": 120,
+          "overOdds": 118,
           "underOdds": null
         },
         {
@@ -3333,7 +3333,7 @@
         {
           "bookmaker": "FanDuel",
           "line": 59.5,
-          "overOdds": 750,
+          "overOdds": 800,
           "underOdds": null
         },
         {
@@ -3345,7 +3345,7 @@
         {
           "bookmaker": "FanDuel",
           "line": 69.5,
-          "overOdds": 1200,
+          "overOdds": 1100,
           "underOdds": null
         },
         {
@@ -4263,1206 +4263,10 @@
       "defensiveComparison": "RB-only opponent allowance: 44.3 receiving yards per game vs league 29.8 (above league average; rank 3 of 32 (1 = most allowed)); last 4 recorded opponent games: 2 featured at least one RB player over 20.5 receiving yards. Group allowance is shared across players and does not predict one player's result. Ranking adjustment +5 points is descriptive, not win probability.",
       "opportunityVerified": true,
       "verdict": "worth_researching",
-      "reason": "Jaylen Warren has averaged 35.8 receiving yards over his last four games, exceeding the 20.5 line consistently. The Indianapolis Colts allow 44.3 receiving yards per game to RBs, which is above the league average, suggesting a favorable matchup for an OVER. His recent target volume also supports this line.",
-      "risks": "Injuries and snap counts are not verified, and the overall effectiveness of the Colts' defense against RBs is not independently confirmed."
-    },
-    {
-      "ticker": "SPORTSBOOK-c4647ca1201e6768501877267ca8251b-teehiggins-ReceivingYards-fanduel-49.5-OVER",
-      "player": "Tee Higgins",
-      "playerTeam": "Cincinnati Bengals",
-      "playerTeamAbbr": "CIN",
-      "teamMatchVerified": true,
-      "teamMatchSource": "nflverse latest recorded team vs sportsbook event",
-      "propType": "Receiving Yards",
-      "line": 49.5,
-      "side": "Over",
-      "odds": -113,
-      "bookmaker": "FanDuel",
-      "bookmakerKey": "fanduel",
-      "source": "Sportsbook",
-      "eventId": "c4647ca1201e6768501877267ca8251b",
-      "homeTeam": "Miami Dolphins",
-      "awayTeam": "Cincinnati Bengals",
-      "gameTime": "2026-10-11T17:00:00Z",
-      "lastOddsUpdate": "2026-10-11T16:34:51Z",
-      "sportsbookLines": [
-        {
-          "bookmaker": "DraftKings",
-          "line": 50.5,
-          "overOdds": -114,
-          "underOdds": -110
-        },
-        {
-          "bookmaker": "FanDuel",
-          "line": 49.5,
-          "overOdds": -113,
-          "underOdds": -113
-        }
-      ],
-      "alternateLines": [
-        {
-          "bookmaker": "DraftKings",
-          "line": 14.5,
-          "overOdds": -1260,
-          "underOdds": null
-        },
-        {
-          "bookmaker": "FanDuel",
-          "line": 14.5,
-          "overOdds": -1450,
-          "underOdds": null
-        },
-        {
-          "bookmaker": "FanDuel",
-          "line": 19.5,
-          "overOdds": -750,
-          "underOdds": null
-        },
-        {
-          "bookmaker": "DraftKings",
-          "line": 24.5,
-          "overOdds": -503,
-          "underOdds": null
-        },
-        {
-          "bookmaker": "FanDuel",
-          "line": 24.5,
-          "overOdds": -490,
-          "underOdds": null
-        },
-        {
-          "bookmaker": "FanDuel",
-          "line": 29.5,
-          "overOdds": -340,
-          "underOdds": null
-        },
-        {
-          "bookmaker": "DraftKings",
-          "line": 39.5,
-          "overOdds": -195,
-          "underOdds": null
-        },
-        {
-          "bookmaker": "FanDuel",
-          "line": 39.5,
-          "overOdds": -192,
-          "underOdds": null
-        },
-        {
-          "bookmaker": "DraftKings",
-          "line": 49.5,
-          "overOdds": -117,
-          "underOdds": null
-        },
-        {
-          "bookmaker": "FanDuel",
-          "line": 49.5,
-          "overOdds": -114,
-          "underOdds": null
-        },
-        {
-          "bookmaker": "DraftKings",
-          "line": 50.5,
-          "overOdds": -112,
-          "underOdds": null
-        },
-        {
-          "bookmaker": "DraftKings",
-          "line": 59.5,
-          "overOdds": 134,
-          "underOdds": null
-        },
-        {
-          "bookmaker": "FanDuel",
-          "line": 59.5,
-          "overOdds": 136,
-          "underOdds": null
-        },
-        {
-          "bookmaker": "DraftKings",
-          "line": 69.5,
-          "overOdds": 206,
-          "underOdds": null
-        },
-        {
-          "bookmaker": "FanDuel",
-          "line": 69.5,
-          "overOdds": 198,
-          "underOdds": null
-        },
-        {
-          "bookmaker": "DraftKings",
-          "line": 79.5,
-          "overOdds": 308,
-          "underOdds": null
-        },
-        {
-          "bookmaker": "FanDuel",
-          "line": 79.5,
-          "overOdds": 290,
-          "underOdds": null
-        },
-        {
-          "bookmaker": "DraftKings",
-          "line": 89.5,
-          "overOdds": 461,
-          "underOdds": null
-        },
-        {
-          "bookmaker": "FanDuel",
-          "line": 89.5,
-          "overOdds": 410,
-          "underOdds": null
-        },
-        {
-          "bookmaker": "DraftKings",
-          "line": 99.5,
-          "overOdds": 680,
-          "underOdds": null
-        },
-        {
-          "bookmaker": "FanDuel",
-          "line": 99.5,
-          "overOdds": 580,
-          "underOdds": null
-        },
-        {
-          "bookmaker": "DraftKings",
-          "line": 109.5,
-          "overOdds": 980,
-          "underOdds": null
-        },
-        {
-          "bookmaker": "FanDuel",
-          "line": 109.5,
-          "overOdds": 750,
-          "underOdds": null
-        },
-        {
-          "bookmaker": "DraftKings",
-          "line": 119.5,
-          "overOdds": 1440,
-          "underOdds": null
-        },
-        {
-          "bookmaker": "FanDuel",
-          "line": 124.5,
-          "overOdds": 1200,
-          "underOdds": null
-        },
-        {
-          "bookmaker": "DraftKings",
-          "line": 129.5,
-          "overOdds": 2000,
-          "underOdds": null
-        },
-        {
-          "bookmaker": "DraftKings",
-          "line": 139.5,
-          "overOdds": 2900,
-          "underOdds": null
-        },
-        {
-          "bookmaker": "DraftKings",
-          "line": 149.5,
-          "overOdds": 3900,
-          "underOdds": null
-        }
-      ],
-      "recentValues": [
-        157,
-        90,
-        95,
-        59
-      ],
-      "recentWeeks": [
-        4,
-        3,
-        2,
-        1
-      ],
-      "gameDetails": [
-        {
-          "week": 4,
-          "value": 157,
-          "targets": 16,
-          "receptions": 11,
-          "rushingYards": 0,
-          "receivingYards": 157,
-          "passingYards": 0
-        },
-        {
-          "week": 3,
-          "value": 90,
-          "targets": 7,
-          "receptions": 6,
-          "rushingYards": 0,
-          "receivingYards": 90,
-          "passingYards": 0
-        },
-        {
-          "week": 2,
-          "value": 95,
-          "targets": 10,
-          "receptions": 5,
-          "rushingYards": 0,
-          "receivingYards": 95,
-          "passingYards": 0
-        },
-        {
-          "week": 1,
-          "value": 59,
-          "targets": 6,
-          "receptions": 3,
-          "rushingYards": 0,
-          "receivingYards": 59,
-          "passingYards": 0
-        }
-      ],
-      "sampleSize": 4,
-      "average": 100.3,
-      "historicalHits": 4,
-      "historicalHitRate": 100,
-      "differenceFromLine": 50.8,
-      "marketVolume": 0,
-      "evidenceNotes": [
-        "The player's latest recorded nflverse team is Cincinnati Bengals, which matches the scheduled game.",
-        "Team matching is based on historical weekly stats, not an independently verified current roster.",
-        "0 of 4 recorded games had zero receiving yards.",
-        "Recorded targets, newest first: 16, 7, 10, 6. Average targets: 9.8.",
-        "Injuries, snap counts, defensive rankings, game spread, and game total are not verified.",
-        "Miami Dolphins defense against WRs through week 4 (4 games): 0 passing yards, -0.7 rushing yards, 110.3 receiving yards, 9.8 receptions, 12.8 targets per game to ALL opposing WRs combined. These are position-group totals, not individual projections."
-      ],
-      "defensiveMatchup": {
-        "opponent": "MIA",
-        "gamesPlayed": 4,
-        "passingYardsAllowedPerGame": 235,
-        "rushingYardsAllowedPerGame": 109,
-        "receivingYardsAllowedPerGame": 235,
-        "receptionsAllowedPerGame": 22,
-        "latestWeek": 4,
-        "source": "nflverse player weekly statistics",
-        "verified": true,
-        "byPosition": {
-          "QB": {
-            "position": "QB",
-            "gamesPlayed": 4,
-            "passingYardsAllowedPerGame": 235,
-            "rushingYardsAllowedPerGame": 9.8,
-            "receivingYardsAllowedPerGame": 0,
-            "receptionsAllowedPerGame": 0,
-            "targetsAllowedPerGame": 0,
-            "leagueAverage": {
-              "passingYardsAllowedPerGame": 234.6,
-              "rushingYardsAllowedPerGame": 16.6,
-              "receivingYardsAllowedPerGame": 0,
-              "receptionsAllowedPerGame": 0,
-              "targetsAllowedPerGame": 0
-            },
-            "mostAllowedRank": {
-              "passingYardsAllowedPerGame": 13,
-              "rushingYardsAllowedPerGame": 25,
-              "receivingYardsAllowedPerGame": 2,
-              "receptionsAllowedPerGame": 2,
-              "targetsAllowedPerGame": 3
-            },
-            "teamsRanked": 32,
-            "recentGames": [
-              {
-                "week": 4,
-                "opponentOffense": "MIN",
-                "passingYards": 247,
-                "rushingYards": 16,
-                "receivingYards": 0,
-                "receptions": 0,
-                "targets": 0,
-                "individualPlayers": [
-                  {
-                    "player": "Kyler Murray",
-                    "passingYards": 247,
-                    "rushingYards": 16,
-                    "receivingYards": 0,
-                    "receptions": 0,
-                    "targets": 0
-                  }
-                ]
-              },
-              {
-                "week": 3,
-                "opponentOffense": "KC",
-                "passingYards": 246,
-                "rushingYards": 1,
-                "receivingYards": 0,
-                "receptions": 0,
-                "targets": 0,
-                "individualPlayers": [
-                  {
-                    "player": "Patrick Mahomes",
-                    "passingYards": 246,
-                    "rushingYards": 1,
-                    "receivingYards": 0,
-                    "receptions": 0,
-                    "targets": 0
-                  }
-                ]
-              },
-              {
-                "week": 2,
-                "opponentOffense": "SF",
-                "passingYards": 287,
-                "rushingYards": 28,
-                "receivingYards": 0,
-                "receptions": 0,
-                "targets": 0,
-                "individualPlayers": [
-                  {
-                    "player": "Mac Jones",
-                    "passingYards": 0,
-                    "rushingYards": -2,
-                    "receivingYards": 0,
-                    "receptions": 0,
-                    "targets": 0
-                  },
-                  {
-                    "player": "Brock Purdy",
-                    "passingYards": 287,
-                    "rushingYards": 30,
-                    "receivingYards": 0,
-                    "receptions": 0,
-                    "targets": 0
-                  }
-                ]
-              },
-              {
-                "week": 1,
-                "opponentOffense": "LV",
-                "passingYards": 160,
-                "rushingYards": -6,
-                "receivingYards": 0,
-                "receptions": 0,
-                "targets": 0,
-                "individualPlayers": [
-                  {
-                    "player": "Kirk Cousins",
-                    "passingYards": 160,
-                    "rushingYards": -6,
-                    "receivingYards": 0,
-                    "receptions": 0,
-                    "targets": 0
-                  }
-                ]
-              }
-            ],
-            "latestWeek": 4
-          },
-          "RB": {
-            "position": "RB",
-            "gamesPlayed": 4,
-            "passingYardsAllowedPerGame": 0,
-            "rushingYardsAllowedPerGame": 99.8,
-            "receivingYardsAllowedPerGame": 34.8,
-            "receptionsAllowedPerGame": 4.5,
-            "targetsAllowedPerGame": 5.5,
-            "leagueAverage": {
-              "passingYardsAllowedPerGame": 0,
-              "rushingYardsAllowedPerGame": 92.3,
-              "receivingYardsAllowedPerGame": 29.8,
-              "receptionsAllowedPerGame": 4.4,
-              "targetsAllowedPerGame": 5.6
-            },
-            "mostAllowedRank": {
-              "passingYardsAllowedPerGame": 1,
-              "rushingYardsAllowedPerGame": 12,
-              "receivingYardsAllowedPerGame": 10,
-              "receptionsAllowedPerGame": 12,
-              "targetsAllowedPerGame": 16
-            },
-            "teamsRanked": 32,
-            "recentGames": [
-              {
-                "week": 4,
-                "opponentOffense": "MIN",
-                "passingYards": 0,
-                "rushingYards": 106,
-                "receivingYards": 44,
-                "receptions": 5,
-                "targets": 9,
-                "individualPlayers": [
-                  {
-                    "player": "Aaron Jones",
-                    "passingYards": 0,
-                    "rushingYards": 94,
-                    "receivingYards": 34,
-                    "receptions": 4,
-                    "targets": 8
-                  },
-                  {
-                    "player": "DeeJay Dallas",
-                    "passingYards": 0,
-                    "rushingYards": 0,
-                    "receivingYards": 10,
-                    "receptions": 1,
-                    "targets": 1
-                  },
-                  {
-                    "player": "Demond Claiborne",
-                    "passingYards": 0,
-                    "rushingYards": 12,
-                    "receivingYards": 0,
-                    "receptions": 0,
-                    "targets": 0
-                  }
-                ]
-              },
-              {
-                "week": 3,
-                "opponentOffense": "KC",
-                "passingYards": 0,
-                "rushingYards": 87,
-                "receivingYards": 7,
-                "receptions": 3,
-                "targets": 3,
-                "individualPlayers": [
-                  {
-                    "player": "Kenneth Walker III",
-                    "passingYards": 0,
-                    "rushingYards": 70,
-                    "receivingYards": 3,
-                    "receptions": 2,
-                    "targets": 2
-                  },
-                  {
-                    "player": "Ben VanSumeren",
-                    "passingYards": 0,
-                    "rushingYards": 0,
-                    "receivingYards": 0,
-                    "receptions": 0,
-                    "targets": 0
-                  },
-                  {
-                    "player": "Brashard Smith",
-                    "passingYards": 0,
-                    "rushingYards": 0,
-                    "receivingYards": 4,
-                    "receptions": 1,
-                    "targets": 1
-                  },
-                  {
-                    "player": "Emmett Johnson",
-                    "passingYards": 0,
-                    "rushingYards": 17,
-                    "receivingYards": 0,
-                    "receptions": 0,
-                    "targets": 0
-                  }
-                ]
-              },
-              {
-                "week": 2,
-                "opponentOffense": "SF",
-                "passingYards": 0,
-                "rushingYards": 63,
-                "receivingYards": 43,
-                "receptions": 4,
-                "targets": 4,
-                "individualPlayers": [
-                  {
-                    "player": "Christian McCaffrey",
-                    "passingYards": 0,
-                    "rushingYards": 23,
-                    "receivingYards": 43,
-                    "receptions": 4,
-                    "targets": 4
-                  },
-                  {
-                    "player": "Jordan James",
-                    "passingYards": 0,
-                    "rushingYards": 15,
-                    "receivingYards": 0,
-                    "receptions": 0,
-                    "targets": 0
-                  },
-                  {
-                    "player": "Kaelon Black",
-                    "passingYards": 0,
-                    "rushingYards": 25,
-                    "receivingYards": 0,
-                    "receptions": 0,
-                    "targets": 0
-                  }
-                ]
-              },
-              {
-                "week": 1,
-                "opponentOffense": "LV",
-                "passingYards": 0,
-                "rushingYards": 143,
-                "receivingYards": 45,
-                "receptions": 6,
-                "targets": 6,
-                "individualPlayers": [
-                  {
-                    "player": "Dylan Laube",
-                    "passingYards": 0,
-                    "rushingYards": 0,
-                    "receivingYards": 0,
-                    "receptions": 0,
-                    "targets": 0
-                  },
-                  {
-                    "player": "Ashton Jeanty",
-                    "passingYards": 0,
-                    "rushingYards": 102,
-                    "receivingYards": 45,
-                    "receptions": 6,
-                    "targets": 6
-                  },
-                  {
-                    "player": "Mike Washington Jr.",
-                    "passingYards": 0,
-                    "rushingYards": 41,
-                    "receivingYards": 0,
-                    "receptions": 0,
-                    "targets": 0
-                  }
-                ]
-              }
-            ],
-            "latestWeek": 4
-          },
-          "WR": {
-            "position": "WR",
-            "gamesPlayed": 4,
-            "passingYardsAllowedPerGame": 0,
-            "rushingYardsAllowedPerGame": -0.7,
-            "receivingYardsAllowedPerGame": 110.3,
-            "receptionsAllowedPerGame": 9.8,
-            "targetsAllowedPerGame": 12.8,
-            "leagueAverage": {
-              "passingYardsAllowedPerGame": 0.2,
-              "rushingYardsAllowedPerGame": 2.7,
-              "receivingYardsAllowedPerGame": 152.1,
-              "receptionsAllowedPerGame": 11.5,
-              "targetsAllowedPerGame": 18.3
-            },
-            "mostAllowedRank": {
-              "passingYardsAllowedPerGame": 3,
-              "rushingYardsAllowedPerGame": 29,
-              "receivingYardsAllowedPerGame": 29,
-              "receptionsAllowedPerGame": 23,
-              "targetsAllowedPerGame": 32
-            },
-            "teamsRanked": 32,
-            "recentGames": [
-              {
-                "week": 4,
-                "opponentOffense": "MIN",
-                "passingYards": 0,
-                "rushingYards": 1,
-                "receivingYards": 80,
-                "receptions": 8,
-                "targets": 10,
-                "individualPlayers": [
-                  {
-                    "player": "Jauan Jennings",
-                    "passingYards": 0,
-                    "rushingYards": 0,
-                    "receivingYards": 8,
-                    "receptions": 1,
-                    "targets": 1
-                  },
-                  {
-                    "player": "Jordan Addison",
-                    "passingYards": 0,
-                    "rushingYards": -1,
-                    "receivingYards": 52,
-                    "receptions": 4,
-                    "targets": 6
-                  },
-                  {
-                    "player": "Jeshaun Jones",
-                    "passingYards": 0,
-                    "rushingYards": 0,
-                    "receivingYards": 0,
-                    "receptions": 0,
-                    "targets": 0
-                  },
-                  {
-                    "player": "Tai Felton",
-                    "passingYards": 0,
-                    "rushingYards": 0,
-                    "receivingYards": 14,
-                    "receptions": 1,
-                    "targets": 1
-                  },
-                  {
-                    "player": "Myles Price",
-                    "passingYards": 0,
-                    "rushingYards": 2,
-                    "receivingYards": 6,
-                    "receptions": 2,
-                    "targets": 2
-                  }
-                ]
-              },
-              {
-                "week": 3,
-                "opponentOffense": "KC",
-                "passingYards": 0,
-                "rushingYards": 0,
-                "receivingYards": 141,
-                "receptions": 12,
-                "targets": 14,
-                "individualPlayers": [
-                  {
-                    "player": "Tyquan Thornton",
-                    "passingYards": 0,
-                    "rushingYards": 0,
-                    "receivingYards": 22,
-                    "receptions": 2,
-                    "targets": 2
-                  },
-                  {
-                    "player": "Nikko Remigio",
-                    "passingYards": 0,
-                    "rushingYards": 0,
-                    "receivingYards": 0,
-                    "receptions": 0,
-                    "targets": 0
-                  },
-                  {
-                    "player": "Rashee Rice",
-                    "passingYards": 0,
-                    "rushingYards": 0,
-                    "receivingYards": 88,
-                    "receptions": 7,
-                    "targets": 9
-                  },
-                  {
-                    "player": "Xavier Worthy",
-                    "passingYards": 0,
-                    "rushingYards": 0,
-                    "receivingYards": 20,
-                    "receptions": 2,
-                    "targets": 2
-                  },
-                  {
-                    "player": "Jalen Royals",
-                    "passingYards": 0,
-                    "rushingYards": 0,
-                    "receivingYards": 11,
-                    "receptions": 1,
-                    "targets": 1
-                  }
-                ]
-              },
-              {
-                "week": 2,
-                "opponentOffense": "SF",
-                "passingYards": 0,
-                "rushingYards": 4,
-                "receivingYards": 137,
-                "receptions": 10,
-                "targets": 11,
-                "individualPlayers": [
-                  {
-                    "player": "Mike Evans",
-                    "passingYards": 0,
-                    "rushingYards": 0,
-                    "receivingYards": 54,
-                    "receptions": 3,
-                    "targets": 3
-                  },
-                  {
-                    "player": "Demarcus Robinson",
-                    "passingYards": 0,
-                    "rushingYards": 0,
-                    "receivingYards": 34,
-                    "receptions": 3,
-                    "targets": 3
-                  },
-                  {
-                    "player": "KhaDarel Hodge",
-                    "passingYards": 0,
-                    "rushingYards": 0,
-                    "receivingYards": 18,
-                    "receptions": 1,
-                    "targets": 1
-                  },
-                  {
-                    "player": "Deebo Samuel Sr.",
-                    "passingYards": 0,
-                    "rushingYards": 4,
-                    "receivingYards": 31,
-                    "receptions": 3,
-                    "targets": 4
-                  },
-                  {
-                    "player": "Jacob Cowing",
-                    "passingYards": 0,
-                    "rushingYards": 0,
-                    "receivingYards": 0,
-                    "receptions": 0,
-                    "targets": 0
-                  }
-                ]
-              },
-              {
-                "week": 1,
-                "opponentOffense": "LV",
-                "passingYards": 0,
-                "rushingYards": -8,
-                "receivingYards": 83,
-                "receptions": 9,
-                "targets": 16,
-                "individualPlayers": [
-                  {
-                    "player": "Cody White",
-                    "passingYards": 0,
-                    "rushingYards": 0,
-                    "receivingYards": 0,
-                    "receptions": 0,
-                    "targets": 1
-                  },
-                  {
-                    "player": "Dareke Young",
-                    "passingYards": 0,
-                    "rushingYards": 0,
-                    "receivingYards": 0,
-                    "receptions": 0,
-                    "targets": 0
-                  },
-                  {
-                    "player": "Jalen Nailor",
-                    "passingYards": 0,
-                    "rushingYards": 0,
-                    "receivingYards": 27,
-                    "receptions": 3,
-                    "targets": 5
-                  },
-                  {
-                    "player": "Tre Tucker",
-                    "passingYards": 0,
-                    "rushingYards": 0,
-                    "receivingYards": 27,
-                    "receptions": 2,
-                    "targets": 4
-                  },
-                  {
-                    "player": "Jack Bech",
-                    "passingYards": 0,
-                    "rushingYards": 0,
-                    "receivingYards": 23,
-                    "receptions": 3,
-                    "targets": 4
-                  },
-                  {
-                    "player": "Malik Benson",
-                    "passingYards": 0,
-                    "rushingYards": -8,
-                    "receivingYards": 6,
-                    "receptions": 1,
-                    "targets": 2
-                  }
-                ]
-              }
-            ],
-            "latestWeek": 4
-          },
-          "TE": {
-            "position": "TE",
-            "gamesPlayed": 4,
-            "passingYardsAllowedPerGame": 0,
-            "rushingYardsAllowedPerGame": 0,
-            "receivingYardsAllowedPerGame": 83.3,
-            "receptionsAllowedPerGame": 7.3,
-            "targetsAllowedPerGame": 7.8,
-            "leagueAverage": {
-              "passingYardsAllowedPerGame": 0,
-              "rushingYardsAllowedPerGame": 0.2,
-              "receivingYardsAllowedPerGame": 52,
-              "receptionsAllowedPerGame": 5.3,
-              "targetsAllowedPerGame": 7.4
-            },
-            "mostAllowedRank": {
-              "passingYardsAllowedPerGame": 1,
-              "rushingYardsAllowedPerGame": 10,
-              "receivingYardsAllowedPerGame": 3,
-              "receptionsAllowedPerGame": 4,
-              "targetsAllowedPerGame": 12
-            },
-            "teamsRanked": 32,
-            "recentGames": [
-              {
-                "week": 4,
-                "opponentOffense": "MIN",
-                "passingYards": 0,
-                "rushingYards": 0,
-                "receivingYards": 123,
-                "receptions": 14,
-                "targets": 14,
-                "individualPlayers": [
-                  {
-                    "player": "T.J. Hockenson",
-                    "passingYards": 0,
-                    "rushingYards": 0,
-                    "receivingYards": 119,
-                    "receptions": 13,
-                    "targets": 13
-                  },
-                  {
-                    "player": "Gavin Bartholomew",
-                    "passingYards": 0,
-                    "rushingYards": 0,
-                    "receivingYards": 4,
-                    "receptions": 1,
-                    "targets": 1
-                  }
-                ]
-              },
-              {
-                "week": 3,
-                "opponentOffense": "KC",
-                "passingYards": 0,
-                "rushingYards": 0,
-                "receivingYards": 98,
-                "receptions": 5,
-                "targets": 6,
-                "individualPlayers": [
-                  {
-                    "player": "Travis Kelce",
-                    "passingYards": 0,
-                    "rushingYards": 0,
-                    "receivingYards": 59,
-                    "receptions": 2,
-                    "targets": 2
-                  },
-                  {
-                    "player": "Noah Gray",
-                    "passingYards": 0,
-                    "rushingYards": 0,
-                    "receivingYards": 39,
-                    "receptions": 3,
-                    "targets": 3
-                  },
-                  {
-                    "player": "Jake Briningstool",
-                    "passingYards": 0,
-                    "rushingYards": 0,
-                    "receivingYards": 0,
-                    "receptions": 0,
-                    "targets": 1
-                  }
-                ]
-              },
-              {
-                "week": 2,
-                "opponentOffense": "SF",
-                "passingYards": 0,
-                "rushingYards": 0,
-                "receivingYards": 80,
-                "receptions": 4,
-                "targets": 4,
-                "individualPlayers": [
-                  {
-                    "player": "George Kittle",
-                    "passingYards": 0,
-                    "rushingYards": 0,
-                    "receivingYards": 80,
-                    "receptions": 4,
-                    "targets": 4
-                  },
-                  {
-                    "player": "Luke Farrell",
-                    "passingYards": 0,
-                    "rushingYards": 0,
-                    "receivingYards": 0,
-                    "receptions": 0,
-                    "targets": 0
-                  },
-                  {
-                    "player": "Brayden Willis",
-                    "passingYards": 0,
-                    "rushingYards": 0,
-                    "receivingYards": 0,
-                    "receptions": 0,
-                    "targets": 0
-                  }
-                ]
-              },
-              {
-                "week": 1,
-                "opponentOffense": "LV",
-                "passingYards": 0,
-                "rushingYards": 0,
-                "receivingYards": 32,
-                "receptions": 6,
-                "targets": 7,
-                "individualPlayers": [
-                  {
-                    "player": "Michael Mayer",
-                    "passingYards": 0,
-                    "rushingYards": 0,
-                    "receivingYards": 32,
-                    "receptions": 6,
-                    "targets": 7
-                  }
-                ]
-              }
-            ],
-            "latestWeek": 4
-          }
-        }
-      },
-      "playerPosition": "WR",
-      "positionDefensiveMatchup": {
-        "position": "WR",
-        "gamesPlayed": 4,
-        "passingYardsAllowedPerGame": 0,
-        "rushingYardsAllowedPerGame": -0.7,
-        "receivingYardsAllowedPerGame": 110.3,
-        "receptionsAllowedPerGame": 9.8,
-        "targetsAllowedPerGame": 12.8,
-        "leagueAverage": {
-          "passingYardsAllowedPerGame": 0.2,
-          "rushingYardsAllowedPerGame": 2.7,
-          "receivingYardsAllowedPerGame": 152.1,
-          "receptionsAllowedPerGame": 11.5,
-          "targetsAllowedPerGame": 18.3
-        },
-        "mostAllowedRank": {
-          "passingYardsAllowedPerGame": 3,
-          "rushingYardsAllowedPerGame": 29,
-          "receivingYardsAllowedPerGame": 29,
-          "receptionsAllowedPerGame": 23,
-          "targetsAllowedPerGame": 32
-        },
-        "teamsRanked": 32,
-        "recentGames": [
-          {
-            "week": 4,
-            "opponentOffense": "MIN",
-            "passingYards": 0,
-            "rushingYards": 1,
-            "receivingYards": 80,
-            "receptions": 8,
-            "targets": 10,
-            "individualPlayers": [
-              {
-                "player": "Jauan Jennings",
-                "passingYards": 0,
-                "rushingYards": 0,
-                "receivingYards": 8,
-                "receptions": 1,
-                "targets": 1
-              },
-              {
-                "player": "Jordan Addison",
-                "passingYards": 0,
-                "rushingYards": -1,
-                "receivingYards": 52,
-                "receptions": 4,
-                "targets": 6
-              },
-              {
-                "player": "Jeshaun Jones",
-                "passingYards": 0,
-                "rushingYards": 0,
-                "receivingYards": 0,
-                "receptions": 0,
-                "targets": 0
-              },
-              {
-                "player": "Tai Felton",
-                "passingYards": 0,
-                "rushingYards": 0,
-                "receivingYards": 14,
-                "receptions": 1,
-                "targets": 1
-              },
-              {
-                "player": "Myles Price",
-                "passingYards": 0,
-                "rushingYards": 2,
-                "receivingYards": 6,
-                "receptions": 2,
-                "targets": 2
-              }
-            ]
-          },
-          {
-            "week": 3,
-            "opponentOffense": "KC",
-            "passingYards": 0,
-            "rushingYards": 0,
-            "receivingYards": 141,
-            "receptions": 12,
-            "targets": 14,
-            "individualPlayers": [
-              {
-                "player": "Tyquan Thornton",
-                "passingYards": 0,
-                "rushingYards": 0,
-                "receivingYards": 22,
-                "receptions": 2,
-                "targets": 2
-              },
-              {
-                "player": "Nikko Remigio",
-                "passingYards": 0,
-                "rushingYards": 0,
-                "receivingYards": 0,
-                "receptions": 0,
-                "targets": 0
-              },
-              {
-                "player": "Rashee Rice",
-                "passingYards": 0,
-                "rushingYards": 0,
-                "receivingYards": 88,
-                "receptions": 7,
-                "targets": 9
-              },
-              {
-                "player": "Xavier Worthy",
-                "passingYards": 0,
-                "rushingYards": 0,
-                "receivingYards": 20,
-                "receptions": 2,
-                "targets": 2
-              },
-              {
-                "player": "Jalen Royals",
-                "passingYards": 0,
-                "rushingYards": 0,
-                "receivingYards": 11,
-                "receptions": 1,
-                "targets": 1
-              }
-            ]
-          },
-          {
-            "week": 2,
-            "opponentOffense": "SF",
-            "passingYards": 0,
-            "rushingYards": 4,
-            "receivingYards": 137,
-            "receptions": 10,
-            "targets": 11,
-            "individualPlayers": [
-              {
-                "player": "Mike Evans",
-                "passingYards": 0,
-                "rushingYards": 0,
-                "receivingYards": 54,
-                "receptions": 3,
-                "targets": 3
-              },
-              {
-                "player": "Demarcus Robinson",
-                "passingYards": 0,
-                "rushingYards": 0,
-                "receivingYards": 34,
-                "receptions": 3,
-                "targets": 3
-              },
-              {
-                "player": "KhaDarel Hodge",
-                "passingYards": 0,
-                "rushingYards": 0,
-                "receivingYards": 18,
-                "receptions": 1,
-                "targets": 1
-              },
-              {
-                "player": "Deebo Samuel Sr.",
-                "passingYards": 0,
-                "rushingYards": 4,
-                "receivingYards": 31,
-                "receptions": 3,
-                "targets": 4
-              },
-              {
-                "player": "Jacob Cowing",
-                "passingYards": 0,
-                "rushingYards": 0,
-                "receivingYards": 0,
-                "receptions": 0,
-                "targets": 0
-              }
-            ]
-          },
-          {
-            "week": 1,
-            "opponentOffense": "LV",
-            "passingYards": 0,
-            "rushingYards": -8,
-            "receivingYards": 83,
-            "receptions": 9,
-            "targets": 16,
-            "individualPlayers": [
-              {
-                "player": "Cody White",
-                "passingYards": 0,
-                "rushingYards": 0,
-                "receivingYards": 0,
-                "receptions": 0,
-                "targets": 1
-              },
-              {
-                "player": "Dareke Young",
-                "passingYards": 0,
-                "rushingYards": 0,
-                "receivingYards": 0,
-                "receptions": 0,
-                "targets": 0
-              },
-              {
-                "player": "Jalen Nailor",
-                "passingYards": 0,
-                "rushingYards": 0,
-                "receivingYards": 27,
-                "receptions": 3,
-                "targets": 5
-              },
-              {
-                "player": "Tre Tucker",
-                "passingYards": 0,
-                "rushingYards": 0,
-                "receivingYards": 27,
-                "receptions": 2,
-                "targets": 4
-              },
-              {
-                "player": "Jack Bech",
-                "passingYards": 0,
-                "rushingYards": 0,
-                "receivingYards": 23,
-                "receptions": 3,
-                "targets": 4
-              },
-              {
-                "player": "Malik Benson",
-                "passingYards": 0,
-                "rushingYards": -8,
-                "receivingYards": 6,
-                "receptions": 1,
-                "targets": 2
-              }
-            ]
-          }
-        ],
-        "latestWeek": 4
-      },
-      "opponentTeam": "Miami Dolphins",
-      "defensiveRankingAdjustment": -0.05,
-      "defensiveComparison": "WR-only opponent allowance: 110.3 receiving yards per game vs league 152.1 (below league average; rank 29 of 32 (1 = most allowed)); last 4 recorded opponent games: 3 featured at least one WR player over 49.5 receiving yards. Group allowance is shared across players and does not predict one player's result. Ranking adjustment -5 points is descriptive, not win probability.",
-      "opportunityVerified": true,
-      "verdict": "worth_researching",
-      "reason": "Tee Higgins has averaged 100.3 receiving yards over his last four games, significantly exceeding the 49.5 line. The Miami Dolphins allow 110.3 receiving yards per game to WRs, which is above the league average, suggesting a favorable matchup. His recent target volume also supports this line.",
-      "risks": "Injuries and snap counts are not verified, and the overall effectiveness of the Dolphins' defense against WRs is not independently confirmed."
+      "reason": "Jaylen Warren recorded receiving yards of week 4: 33, week 3: 49, week 2: 34, week 1: 27. That is 4 of 4 recorded games over the 20.5 FanDuel main line (-113), with a 35.8 per-game average. Indianapolis Colts allowed 44.3 receiving yards per game to opposing RBs combined across 4 games, versus a 29.8 league average. This is historically more favorable for an Over, based on position-group history, not an individual-player forecast. Rank 3 of 32 (1 allows most). Historical hit rates are not future probabilities; player availability and usage remain unverified.",
+      "risks": "Injuries, snap counts, and other factors affecting player performance are not verified. The group allowance for receiving yards is shared among multiple players, which could dilute individual opportunities."
     }
   ],
-  "updatedAt": "2026-10-11T16:35:36.466Z",
+  "updatedAt": "2026-10-11T16:48:56.197Z",
   "disclaimer": "AI-generated research uses recent historical results and quoted sportsbook prices. Player teams are matched using their latest recorded nflverse team, not live roster status. This is not a validated forecast, expected-value calculation, or guarantee of betting outcomes. Historical position-specific defensive group totals and capped league-relative ranking adjustments are included when available. These are not individual-player projections or predictive. Injuries and current defensive personnel remain unverified. Odds and availability may change."
 }
