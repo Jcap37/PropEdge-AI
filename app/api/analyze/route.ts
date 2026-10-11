@@ -509,6 +509,52 @@ function defensiveContextForCandidate(
   };
 }
 
+// v10: Recent INDIVIDUAL opponents at the same position, not just group totals.
+// These are descriptive observations; roles and opportunity can differ substantially.
+function individualOpponentContext(candidate: Candidate): string {
+  const matchup = candidate.positionDefensiveMatchup;
+  if (!matchup) return "Recent same-position opponent player results are unavailable.";
+  const games = matchup.recentGames.slice(0, 5);
+  const rows: Array<{week: number; name: string; value: number}> = [];
+  for (const game of games) {
+    for (const player of game.individualPlayers) {
+      const value = candidate.propType === "Passing Yards" ? player.passingYards
+        : candidate.propType === "Rushing Yards" ? player.rushingYards
+        : candidate.propType === "Receiving Yards" ? player.receivingYards
+        : candidate.propType === "Receptions" ? player.receptions
+        : player.rushingYards + player.receivingYards;
+      if (Number.isFinite(value) && player.player.trim()) {
+        rows.push({week: game.week, name: player.player, value: round(value)});
+      }
+    }
+  }
+  if (!rows.length) return "Individual opposing-player results were not available for this position.";
+  // Show top performers per game without pretending they had the same role as the candidate.
+  const leaders = games.map((game) => rows.filter((r) => r.week === game.week)
+    .sort((a,b) => b.value - a.value)[0]).filter((r): r is {week:number;name:string;value:number} => Boolean(r));
+  const hits = rows.filter((r) => historicalHit(r.value, candidate.line, candidate.side)).length;
+  return `Recent opposing ${candidate.playerPosition} individual results (top performer each week): ` +
+    leaders.map((r) => `W${r.week} ${r.name} ${r.value}`).join("; ") + ". " +
+    `Across ${rows.length} recorded ${candidate.playerPosition} player-game results, ${hits} finished ` +
+    `${candidate.side.toLowerCase()} ${candidate.line}; these are not sportsbook outcomes or comparable roles. `;
+}
+
+// Conservative screen: an unusually stingy position defense is a reason to
+// withhold an OVER recommendation, even when the player's recent hit rate is high.
+function stronglyUnfavorableDefense(candidate: Candidate): boolean {
+  const matchup = candidate.positionDefensiveMatchup;
+  if (!matchup || matchup.gamesPlayed < 4 || matchup.teamsRanked < 24) return false;
+  const metric = propMetric(candidate.propType);
+  const metrics: PositionMetric[] = metric ? [metric] :
+    ["rushingYardsAllowedPerGame", "receivingYardsAllowedPerGame"];
+  const allowed = metrics.reduce((sum, key) => sum + matchup[key], 0);
+  const average = metrics.reduce((sum, key) => sum + matchup.leagueAverage[key], 0);
+  if (!(average > 0) || !Number.isFinite(allowed)) return false;
+  const difference = (allowed - average) / average;
+  // At least 12% less than league average for Overs, or 12% more for Unders.
+  return candidate.side === "Over" ? difference <= -0.12 : difference >= 0.12;
+}
+
 // v9.1: Facts shown to users are constructed from verified numeric inputs,
 // rather than trusting the language model to recount hits or interpret defense.
 function verifiedRecommendationReason(candidate: Candidate): string {
@@ -548,7 +594,7 @@ function verifiedRecommendationReason(candidate: Candidate): string {
         `based on position-group history, not an individual-player forecast.${rankText}`;
     }
   }
-  return lead + matchupText +
+  return lead + matchupText + " " + individualOpponentContext(candidate) +
     " Historical hit rates are not future probabilities; player availability and usage remain unverified.";
 }
 
@@ -1370,8 +1416,10 @@ async function generateAnalysis() {
     }
   }
 
+  const excludedForStrongDefensiveMatchup = [...bestByPlayerPropSide.values()].filter(stronglyUnfavorableDefense).length;
+
   const selected = selectDiverseCandidates(
-    [...bestByPlayerPropSide.values()],
+    [...bestByPlayerPropSide.values()].filter((candidate) => !stronglyUnfavorableDefense(candidate)),
     MAX_CANDIDATES_FOR_AI
   );
 
@@ -1413,9 +1461,11 @@ async function generateAnalysis() {
     defensiveLeagueBaselineAvailable: defenseBaselineAvailable,
     defensiveLeagueBaseline: null,
     defensivePositionSpecificEnabled: true,
-    rankingVersion: 9.1,
+    rankingVersion: 10,
+    excludedForStrongDefensiveMatchup,
+    recentIndividualOpponentContextEnabled: true,
     rankingDescription:
-      "Historical player evidence plus capped position-specific opponent-vs-league defensive context; not a calibrated probability or expected-value model.",
+      "Historical player evidence, individual opposing player results, and a conservative defensive matchup screen; not a calibrated probability or expected-value model.",
     defensiveDataWarning: defenseResult.error || null,
     defensiveMatchupsVerified: selected.filter(
       (candidate) => candidate.positionDefensiveMatchup !== null
@@ -1797,10 +1847,10 @@ Allowed verdicts:
 // Version 9 adds position-specific opponent defense and league-relative ranking.
 const getCachedAnalysis = unstable_cache(
   generateAnalysis,
-  ["propedge-ai-analysis-v9-1-verified-reasons"],
+  ["propedge-ai-analysis-v10-individual-defense"],
   {
     revalidate: CACHE_SECONDS,
-    tags: ["propedge-ai-analysis-v9-1"],
+    tags: ["propedge-ai-analysis-v10"],
   }
 );
 
@@ -1957,7 +2007,7 @@ export async function POST(request: NextRequest) {
         cacheDurationHours: 6,
         sportsbookGamesPerAnalysis:
           MAX_GAMES_TO_ANALYZE,
-        evidenceFilterVersion: 9.1,
+        evidenceFilterVersion: 10,
         leagueRelativeDefenseRankingEnabled: true,
         positionSpecificDefenseEnabled: true,
         defensiveContextEnabled: true,
