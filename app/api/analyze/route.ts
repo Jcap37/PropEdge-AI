@@ -539,6 +539,69 @@ function individualOpponentContext(candidate: Candidate): string {
     `${candidate.side.toLowerCase()} ${candidate.line}; these are not sportsbook outcomes or comparable roles. `;
 }
 
+// v10.1: Compare individual opposing players with the actual proposed line.
+// All-player observations can be diluted by low-usage reserves. The best
+// performer per opponent game is a second descriptive check, not a role match.
+type OpponentDistribution = {
+  playerGames: number;
+  games: number;
+  hits: number;
+  topPerGameHits: number;
+  hitShare: number;
+  topHitShare: number;
+  conflicting: boolean;
+  adjustment: number;
+};
+
+function opponentDistribution(candidate: Candidate): OpponentDistribution | null {
+  const matchup = candidate.positionDefensiveMatchup;
+  if (!matchup || matchup.gamesPlayed < 4 || matchup.teamsRanked < 24) return null;
+  const games = matchup.recentGames.slice(0, 5);
+  let playerGames = 0;
+  let hits = 0;
+  let topPerGameHits = 0;
+  let usableGames = 0;
+  for (const game of games) {
+    const values = game.individualPlayers.map((player) =>
+      candidate.propType === "Passing Yards" ? player.passingYards :
+      candidate.propType === "Rushing Yards" ? player.rushingYards :
+      candidate.propType === "Receiving Yards" ? player.receivingYards :
+      candidate.propType === "Receptions" ? player.receptions :
+      player.rushingYards + player.receivingYards
+    ).filter(Number.isFinite);
+    if (!values.length) continue;
+    usableGames++;
+    playerGames += values.length;
+    hits += values.filter((value) => historicalHit(value, candidate.line, candidate.side)).length;
+    const best = candidate.side === "Over" ? Math.max(...values) : Math.min(...values);
+    if (historicalHit(best, candidate.line, candidate.side)) topPerGameHits++;
+  }
+  if (usableGames < 4 || playerGames < 8) return null;
+  const hitShare = hits / playerGames;
+  const topHitShare = topPerGameHits / usableGames;
+  // Require both distribution signals to agree before applying a material penalty.
+  // A low all-player hit rate alone is NOT enough to reject an Over.
+  const conflicting = hitShare <= 0.25 && topHitShare <= 0.25;
+  const adjustment = conflicting ? -0.08 : hitShare <= 0.25 ? -0.025 : 0;
+  return { playerGames, games: usableGames, hits, topPerGameHits,
+    hitShare, topHitShare, conflicting, adjustment };
+}
+
+function opponentDistributionContext(candidate: Candidate): string {
+  const sample = opponentDistribution(candidate);
+  if (!sample) return "Individual-opponent distribution sample is insufficient for a ranking adjustment.";
+  return `Same-position opponent distribution at the proposed ${candidate.line} line: ` +
+    `${sample.hits} of ${sample.playerGames} individual player-games and ` +
+    `${sample.topPerGameHits} of ${sample.games} weekly top-performer results finished ` +
+    `${candidate.side.toLowerCase()}. ` +
+    (sample.conflicting
+      ? "Both samples are unfavorable; the candidate receives a cautious ranking penalty. "
+      : sample.hitShare <= 0.25
+        ? "The all-player sample is unfavorable, but the weekly top-performer sample does not confirm a strong mismatch. "
+        : "No strong negative individual-opponent distribution signal was detected. ") +
+    "Opposing players can have different roles and usage; these are descriptive counts, not probabilities.";
+}
+
 // Conservative screen: an unusually stingy position defense is a reason to
 // withhold an OVER recommendation, even when the player's recent hit rate is high.
 function stronglyUnfavorableDefense(candidate: Candidate): boolean {
@@ -594,7 +657,7 @@ function verifiedRecommendationReason(candidate: Candidate): string {
         `based on position-group history, not an individual-player forecast.${rankText}`;
     }
   }
-  return lead + matchupText + " " + individualOpponentContext(candidate) +
+  return lead + matchupText + " " + individualOpponentContext(candidate) + " " + opponentDistributionContext(candidate) +
     " Historical hit rates are not future probabilities; player availability and usage remain unverified.";
 }
 
@@ -622,7 +685,8 @@ function candidateScore(candidate: Candidate): number {
     sampleFactor * 0.2 +
     Math.min(relativeDifference, 1) * 0.2 +
     consistency * 0.15 +
-    candidate.defensiveRankingAdjustment
+    candidate.defensiveRankingAdjustment +
+    (opponentDistribution(candidate)?.adjustment ?? 0)
   );
 }
 
@@ -1416,6 +1480,8 @@ async function generateAnalysis() {
     }
   }
 
+  const distributionConflicts = [...bestByPlayerPropSide.values()].filter((candidate) => opponentDistribution(candidate)?.conflicting).length;
+
   const excludedForStrongDefensiveMatchup = [...bestByPlayerPropSide.values()].filter(stronglyUnfavorableDefense).length;
 
   const selected = selectDiverseCandidates(
@@ -1461,11 +1527,13 @@ async function generateAnalysis() {
     defensiveLeagueBaselineAvailable: defenseBaselineAvailable,
     defensiveLeagueBaseline: null,
     defensivePositionSpecificEnabled: true,
-    rankingVersion: 10,
+    rankingVersion: 10.1,
+    distributionConflicts,
+    individualOpponentDistributionEnabled: true,
     excludedForStrongDefensiveMatchup,
     recentIndividualOpponentContextEnabled: true,
     rankingDescription:
-      "Historical player evidence, individual opposing player results, and a conservative defensive matchup screen; not a calibrated probability or expected-value model.",
+      "Historical player evidence, capped position-defense context, and sample-gated individual opponent distribution penalties; not a calibrated probability or expected-value model.",
     defensiveDataWarning: defenseResult.error || null,
     defensiveMatchupsVerified: selected.filter(
       (candidate) => candidate.positionDefensiveMatchup !== null
@@ -1847,10 +1915,10 @@ Allowed verdicts:
 // Version 9 adds position-specific opponent defense and league-relative ranking.
 const getCachedAnalysis = unstable_cache(
   generateAnalysis,
-  ["propedge-ai-analysis-v10-individual-defense"],
+  ["propedge-ai-analysis-v10-1-distribution"],
   {
     revalidate: CACHE_SECONDS,
-    tags: ["propedge-ai-analysis-v10"],
+    tags: ["propedge-ai-analysis-v10-1"],
   }
 );
 
@@ -2007,7 +2075,8 @@ export async function POST(request: NextRequest) {
         cacheDurationHours: 6,
         sportsbookGamesPerAnalysis:
           MAX_GAMES_TO_ANALYZE,
-        evidenceFilterVersion: 10,
+        evidenceFilterVersion: 10.1,
+        individualOpponentDistributionEnabled: true,
         leagueRelativeDefenseRankingEnabled: true,
         positionSpecificDefenseEnabled: true,
         defensiveContextEnabled: true,
