@@ -1,6 +1,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { unstable_cache } from "next/cache";
+import { timingSafeEqual } from "node:crypto";
 import { getKalshiMarkets } from "../../../lib/kalshi";
 import { getNFLStats } from "../../../lib/nfl-stats";
 
@@ -11,6 +12,24 @@ const CACHE_SECONDS = 6 * 60 * 60;
 
 function normalizeName(name: string) {
   return name.toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+function isAuthorized(request: NextRequest) {
+  const adminSecret = process.env.ANALYZE_ADMIN_SECRET;
+  const providedSecret = request.headers.get("x-admin-secret");
+
+  if (!adminSecret || !providedSecret) {
+    return false;
+  }
+
+  const expected = Buffer.from(adminSecret, "utf8");
+  const provided = Buffer.from(providedSecret, "utf8");
+
+  if (expected.length !== provided.length) {
+    return false;
+  }
+
+  return timingSafeEqual(expected, provided);
 }
 
 async function generateAnalysis() {
@@ -25,10 +44,7 @@ async function generateAnalysis() {
     getNFLStats(),
   ]);
 
-  const playerGames = new Map<
-    string,
-    typeof nfl.players
-  >();
+  const playerGames = new Map<string, typeof nfl.players>();
 
   for (const game of nfl.players) {
     if (game.position !== "QB") continue;
@@ -281,8 +297,7 @@ Do not repeat players.
   };
 }
 
-// Reuse successful analysis results for six hours.
-// The cached function receives no user-controlled inputs.
+// Reuse successful results for six hours.
 const getCachedAnalysis = unstable_cache(
   generateAnalysis,
   ["propedge-ai-analysis-v1"],
@@ -296,7 +311,8 @@ export async function POST(request: NextRequest) {
   try {
     const origin = request.headers.get("origin");
 
-    // Basic browser-origin check, not authentication.
+    // An origin check is an additional browser safeguard,
+    // not a replacement for admin authentication.
     if (origin && origin !== request.nextUrl.origin) {
       return NextResponse.json(
         {
@@ -315,6 +331,7 @@ export async function POST(request: NextRequest) {
         message: "PropEdge AI backend is configured.",
         apiKeyConfigured: Boolean(process.env.OPENAI_API_KEY),
         analysisEnabled: true,
+        authenticationRequired: true,
         cacheDurationHours: 6,
       });
     }
@@ -326,6 +343,27 @@ export async function POST(request: NextRequest) {
           error: 'Use {"action":"analyze"} to run analysis.',
         },
         { status: 400 }
+      );
+    }
+
+    if (!process.env.ANALYZE_ADMIN_SECRET) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Admin authentication is not configured.",
+        },
+        { status: 503 }
+      );
+    }
+
+    // Authentication happens BEFORE any paid AI operation.
+    if (!isAuthorized(request)) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Admin authorization required.",
+        },
+        { status: 401 }
       );
     }
 
