@@ -408,6 +408,99 @@ function AlternateLines({
   );
 }
 
+type AnalysisSection = {
+  title: string;
+  content: string;
+  kind: "recent" | "history" | "defense" | "opponents" | "notes";
+};
+
+// The analyzer currently publishes a single prose `reason` field. Split only
+// at recognizable topic boundaries; preserve its actual words and numbers.
+// Unrecognized text is kept, never silently dropped or reinterpreted.
+function splitAnalysisSections(reason: string): AnalysisSection[] {
+  const content = reason.trim();
+  if (!content) return [];
+
+  const boundaries: Array<{ index: number; kind: AnalysisSection["kind"]; title: string }> = [
+    { index: 0, kind: "recent", title: "Recent Performance" },
+  ];
+
+  const history = content.indexOf("Player vs. ");
+  if (history > 0) {
+    boundaries.push({ index: history, kind: "history", title: "Previous Games vs. Opponent" });
+  }
+
+  // Locate the start of the defense sentence using the recorded "allowed" stat.
+  // This works for passing, rushing, receiving and reception recommendations.
+  const defenseMatch = /\ballowed\s+[\d,.]+\s+(?:passing|rushing|receiving|receptions|targets)/i.exec(content);
+  if (defenseMatch) {
+    const previousSentence = content.lastIndexOf(". ", defenseMatch.index);
+    const defenseStart = previousSentence >= 0 ? previousSentence + 2 : 0;
+    if (defenseStart > 0) {
+      boundaries.push({ index: defenseStart, kind: "defense", title: "Opponent Defense" });
+    }
+  }
+
+  const opponents = content.indexOf("Recent opposing ");
+  if (opponents > 0) {
+    boundaries.push({ index: opponents, kind: "opponents", title: "Other Players vs. Opponent" });
+  }
+
+  const notes = content.indexOf("Historical hit rates are not future probabilities");
+  if (notes > 0) {
+    boundaries.push({ index: notes, kind: "notes", title: "Important Context" });
+  }
+
+  boundaries.sort((a, b) => a.index - b.index);
+  const distinct = boundaries.filter((item, index) =>
+    index === 0 || item.index !== boundaries[index - 1].index
+  );
+
+  return distinct.map((item, index) => ({
+    title: item.title,
+    kind: item.kind,
+    content: content.slice(item.index, distinct[index + 1]?.index ?? content.length).trim(),
+  })).filter((item) => item.content.length > 0);
+}
+
+function AnalysisBreakdown({ reason }: { reason: string }) {
+  const sections = splitAnalysisSections(reason);
+  const icons = {
+    recent: Activity,
+    history: Clock3,
+    defense: ShieldAlert,
+    opponents: Target,
+    notes: ShieldAlert,
+  };
+
+  return (
+    <div className="border-t border-[#292929] pt-4">
+      <h4 className="mb-3 text-xs font-semibold uppercase tracking-wide text-[#aaa]">
+        Research Breakdown
+      </h4>
+      <div className="space-y-3">
+        {sections.map((section, index) => {
+          const Icon = icons[section.kind];
+          return (
+            <section
+              key={`${section.kind}-${index}`}
+              className="rounded-xl border border-[#303030] bg-[#191919] p-4"
+            >
+              <h5 className="mb-2 flex items-center gap-2 text-sm font-semibold text-white">
+                <Icon size={16} className="shrink-0 text-emerald-400" />
+                {section.title}
+              </h5>
+              <p className="whitespace-pre-line text-sm leading-6 text-[#ccc]">
+                {section.content}
+              </p>
+            </section>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function RecommendationCard({
   item,
 }: {
@@ -505,23 +598,17 @@ function RecommendationCard({
           </div>
         )}
 
-      <div className="border-t border-[#292929] pt-4">
-        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[#aaa]">
-          AI analysis
-        </p>
+      <AnalysisBreakdown reason={item.reason} />
 
-        <p className="text-sm leading-6 text-[#ddd]">
-          {item.reason}
-        </p>
-
-        <p className="mb-2 mt-4 text-xs font-semibold uppercase tracking-wide text-[#aaa]">
-          Risks and uncertainty
-        </p>
-
-        <p className="text-sm leading-6 text-[#aaa]">
+      <section className="mt-3 rounded-xl border border-[#4a3925] bg-[#211b13] p-4">
+        <h4 className="mb-2 flex items-center gap-2 text-sm font-semibold text-amber-200">
+          <ShieldAlert size={16} />
+          Risks & Uncertainty
+        </h4>
+        <p className="text-sm leading-6 text-[#d1c4b4]">
           {item.risks}
         </p>
-      </div>
+      </section>
 
       <SportsbookComparison item={item} />
       <AlternateLines item={item} />
