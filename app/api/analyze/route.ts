@@ -20,8 +20,6 @@ const PUBLISHED_PATH = "data/published-research.json";
 const ODDS_BASE = "https://api.the-odds-api.com/v4";
 const ODDS_SPORT = "americanfootball_nfl";
 
-// Start with eight upcoming games to control API credit usage.
-// Increase only after confirming your Odds API allowance.
 const MAX_GAMES_TO_ANALYZE = 8;
 const MAX_CANDIDATES_FOR_AI = 20;
 const MAX_RECOMMENDATIONS = 5;
@@ -36,6 +34,10 @@ type SupportedProp =
   | "Rushing + Receiving Yards";
 
 type Side = "Over" | "Under";
+
+type Verdict =
+  | "worth_researching"
+  | "insufficient_evidence";
 
 const CATEGORIES: SupportedProp[] = [
   "Passing Yards",
@@ -108,11 +110,21 @@ type SportsbookLine = {
   lastUpdate: string | null;
 };
 
-type AlternateLine = {
+type DisplayLine = {
   bookmaker: string;
   line: number;
   overOdds: number | null;
   underOdds: number | null;
+};
+
+type GameDetail = {
+  week: number;
+  value: number;
+  targets: number | null;
+  receptions: number | null;
+  rushingYards: number | null;
+  receivingYards: number | null;
+  passingYards: number | null;
 };
 
 type Candidate = {
@@ -130,26 +142,20 @@ type Candidate = {
   awayTeam: string;
   gameTime: string;
   lastOddsUpdate: string | null;
-  sportsbookLines: {
-    bookmaker: string;
-    line: number;
-    overOdds: number | null;
-    underOdds: number | null;
-  }[];
-  alternateLines: AlternateLine[];
+  sportsbookLines: DisplayLine[];
+  alternateLines: DisplayLine[];
   recentValues: number[];
   recentWeeks: number[];
+  gameDetails: GameDetail[];
   sampleSize: number;
   average: number;
   historicalHits: number;
   historicalHitRate: number;
   differenceFromLine: number;
   marketVolume: number;
+  evidenceNotes: string[];
+  opportunityVerified: boolean;
 };
-
-type Verdict =
-  | "worth_researching"
-  | "insufficient_evidence";
 
 type Recommendation = Candidate & {
   verdict: Verdict;
@@ -176,6 +182,13 @@ function round(value: number): number {
   return Number(value.toFixed(1));
 }
 
+function numericValue(value: unknown): number | null {
+  return typeof value === "number" &&
+    Number.isFinite(value)
+    ? value
+    : null;
+}
+
 function isAuthorized(request: NextRequest): boolean {
   const secret = process.env.ANALYZE_ADMIN_SECRET;
   const provided = request.headers.get("x-admin-secret");
@@ -197,32 +210,26 @@ function statForProp(
 ): number | null {
   switch (prop) {
     case "Passing Yards":
-      return game.passingYards;
+      return numericValue(game.passingYards);
 
     case "Rushing Yards":
-      return game.rushingYards;
+      return numericValue(game.rushingYards);
 
     case "Receiving Yards":
-      return game.receivingYards;
+      return numericValue(game.receivingYards);
 
     case "Receptions":
-      return game.receptions;
+      return numericValue(game.receptions);
 
-    case "Rushing + Receiving Yards":
-      return game.rushingYards !== null &&
-        game.receivingYards !== null
-        ? game.rushingYards + game.receivingYards
+    case "Rushing + Receiving Yards": {
+      const rushing = numericValue(game.rushingYards);
+      const receiving = numericValue(game.receivingYards);
+
+      return rushing !== null && receiving !== null
+        ? rushing + receiving
         : null;
+    }
   }
-}
-
-function getOddsForSide(
-  line: SportsbookLine,
-  side: Side
-): number | null {
-  return side === "Over"
-    ? line.overOdds
-    : line.underOdds;
 }
 
 function historicalHit(
@@ -235,31 +242,39 @@ function historicalHit(
     : value < line;
 }
 
+function getOddsForSide(
+  line: SportsbookLine,
+  side: Side
+): number | null {
+  return side === "Over"
+    ? line.overOdds
+    : line.underOdds;
+}
+
 function candidateScore(candidate: Candidate): number {
-  // Research ranking only.
-  // This is NOT a calibrated win probability or EV model.
   const hitRate =
     candidate.historicalHitRate / 100;
 
   const sampleFactor =
     Math.min(candidate.sampleSize / 5, 1);
 
-  const directionalDifference =
-    candidate.side === "Over"
-      ? candidate.average - candidate.line
-      : candidate.line - candidate.average;
-
-  const relativeEdge =
+  const relativeDifference =
     Math.max(
       0,
-      directionalDifference /
+      candidate.differenceFromLine /
         Math.max(Math.abs(candidate.line), 1)
     );
 
+  const consistency =
+    candidate.recentValues.filter(
+      (value) => value > 0
+    ).length / candidate.sampleSize;
+
   return (
-    hitRate * 0.6 +
-    sampleFactor * 0.15 +
-    Math.min(relativeEdge, 1) * 0.25
+    hitRate * 0.45 +
+    sampleFactor * 0.2 +
+    Math.min(relativeDifference, 1) * 0.2 +
+    consistency * 0.15
   );
 }
 
@@ -287,7 +302,7 @@ async function oddsRequest<T>(
 
   if (!apiKey) {
     throw new Error(
-      "ODDS_API_KEY is not configured in Vercel."
+      "ODDS_API_KEY is not configured."
     );
   }
 
@@ -442,8 +457,11 @@ async function fetchSportsbookSnapshot(): Promise<OddsSnapshot> {
     failures: [],
   };
 
-  // Three simultaneous requests per batch.
-  for (let start = 0; start < selected.length; start += 3) {
+  for (
+    let start = 0;
+    start < selected.length;
+    start += 3
+  ) {
     const batch = selected.slice(start, start + 3);
 
     const responses = await Promise.allSettled(
@@ -511,8 +529,6 @@ function selectDiverseCandidates(
     return true;
   }
 
-  // Include strong candidates from different categories
-  // when available, without forcing weak candidates.
   for (const category of CATEGORIES) {
     const best = ranked.find(
       (candidate) =>
@@ -530,7 +546,6 @@ function selectDiverseCandidates(
 
   for (const candidate of ranked) {
     if (selected.length >= limit) break;
-
     add(candidate);
   }
 
@@ -544,20 +559,163 @@ function fallbackRecommendation(
     ...candidate,
     verdict: "insufficient_evidence",
     reason:
-      `${candidate.player} averaged ` +
-      `${candidate.average} ${candidate.propType.toLowerCase()} ` +
-      `over ${candidate.sampleSize} recent games. ` +
-      `The ${candidate.side.toLowerCase()} ` +
-      `${candidate.line} result occurred in ` +
-      `${candidate.historicalHits} of those games. ` +
+      `${candidate.player} averaged ${candidate.average} ` +
+      `${candidate.propType.toLowerCase()} across ` +
+      `${candidate.sampleSize} recent recorded games. ` +
+      `The ${candidate.side.toLowerCase()} ${candidate.line} ` +
+      `result occurred ${candidate.historicalHits} times. ` +
       `The quoted ${candidate.bookmaker} price was ` +
       `${candidate.odds > 0 ? "+" : ""}${candidate.odds}.`,
     risks:
-      "Recent results are a small historical sample. " +
-      "Injuries, player role, opponent defense, " +
-      "weather, and game script have not been " +
-      "independently verified.",
+      "This is a small historical sample. Playing time, " +
+      "rushing attempts, injuries, opponent defense, " +
+      "and expected value have not been verified.",
   };
+}
+
+function buildEvidenceNotes(
+  games: NFLPlayerGame[],
+  prop: SupportedProp,
+  values: number[]
+): string[] {
+  const notes: string[] = [];
+
+  const zeroGames = values.filter(
+    (value) => value === 0
+  ).length;
+
+  notes.push(
+    `${zeroGames} of ${values.length} recorded games had zero ` +
+      `${prop.toLowerCase()}.`
+  );
+
+  if (
+    prop === "Receiving Yards" ||
+    prop === "Receptions" ||
+    prop === "Rushing + Receiving Yards"
+  ) {
+    const targets = games.map((game) =>
+      numericValue(game.targets)
+    );
+
+    if (targets.every((value) => value !== null)) {
+      const validTargets = targets as number[];
+
+      const averageTargets =
+        validTargets.reduce(
+          (sum, value) => sum + value,
+          0
+        ) / validTargets.length;
+
+      notes.push(
+        `Recorded targets by recent week: ` +
+          validTargets.join(", ") +
+          `. Average targets: ${round(averageTargets)}.`
+      );
+    } else {
+      notes.push(
+        "Complete recent target data was not available."
+      );
+    }
+  }
+
+  if (
+    prop === "Rushing Yards" ||
+    prop === "Rushing + Receiving Yards"
+  ) {
+    notes.push(
+      "Rushing attempts and carry share are not available " +
+        "in the current stats feed."
+    );
+  }
+
+  notes.push(
+    "Injuries, snap counts, defensive rankings, " +
+      "game spread, and game total are not verified."
+  );
+
+  return notes;
+}
+
+function passesEvidenceFilters(
+  games: NFLPlayerGame[],
+  prop: SupportedProp,
+  values: number[]
+): boolean {
+  if (values.length < 4) return false;
+
+  const positiveGames = values.filter(
+    (value) => value > 0
+  ).length;
+
+  // Exclude samples dominated by zero-stat games.
+  // This prevents inactive or rarely used players
+  // from ranking highly based on automatic unders.
+  if (positiveGames < 3) return false;
+
+  const mostRecent = values[0];
+
+  // Avoid players whose latest recorded game
+  // provides no production evidence.
+  if (mostRecent === 0) return false;
+
+  if (
+    prop === "Receiving Yards" ||
+    prop === "Receptions"
+  ) {
+    const targets = games.map((game) =>
+      numericValue(game.targets)
+    );
+
+    if (targets.some((value) => value === null)) {
+      return false;
+    }
+
+    const validTargets = targets as number[];
+
+    const targetedGames = validTargets.filter(
+      (value) => value > 0
+    ).length;
+
+    const averageTargets =
+      validTargets.reduce(
+        (sum, value) => sum + value,
+        0
+      ) / validTargets.length;
+
+    // Require actual recorded receiving opportunities.
+    if (
+      targetedGames < 3 ||
+      averageTargets < 2 ||
+      validTargets[0] === 0
+    ) {
+      return false;
+    }
+  }
+
+  if (prop === "Rushing Yards") {
+    // We cannot verify rushing attempts yet.
+    // Require meaningful recorded rushing production
+    // rather than automatically counting zeroes.
+    const positiveRushingGames = games.filter(
+      (game) =>
+        (numericValue(game.rushingYards) ?? 0) > 0
+    ).length;
+
+    if (positiveRushingGames < 3) return false;
+  }
+
+  if (prop === "Rushing + Receiving Yards") {
+    const activeProductionGames = games.filter(
+      (game) =>
+        (numericValue(game.rushingYards) ?? 0) > 0 ||
+        (numericValue(game.receivingYards) ?? 0) > 0
+    ).length;
+
+    if (activeProductionGames < 3) return false;
+  }
+
+  return true;
 }
 
 async function generateAnalysis() {
@@ -579,17 +737,16 @@ async function generateAnalysis() {
     snapshot.eventsSucceeded === 0
   ) {
     throw new Error(
-      "No NFL sportsbook event requests succeeded. " +
-      snapshot.failures.join("; ")
+      "No NFL sportsbook requests succeeded. " +
+        snapshot.failures.join("; ")
     );
   }
 
-  // Avoid publishing a misleadingly incomplete report.
   if (snapshot.eventsFailed > 0) {
     throw new Error(
       "Some NFL sportsbook requests failed. " +
-      "Research was not published. " +
-      snapshot.failures.join("; ")
+        "Research was not published. " +
+        snapshot.failures.join("; ")
     );
   }
 
@@ -626,6 +783,7 @@ async function generateAnalysis() {
   );
 
   const candidates: Candidate[] = [];
+  let excludedForWeakEvidence = 0;
 
   for (const main of mainLines) {
     const games =
@@ -633,7 +791,7 @@ async function generateAnalysis() {
 
     const recent = games.slice(0, 5);
 
-    if (recent.length < 3) continue;
+    if (recent.length < 4) continue;
 
     const values = recent.map((game) =>
       statForProp(game, main.propType)
@@ -645,9 +803,22 @@ async function generateAnalysis() {
 
     const stats = values as number[];
 
+    if (
+      !passesEvidenceFilters(
+        recent,
+        main.propType,
+        stats
+      )
+    ) {
+      excludedForWeakEvidence++;
+      continue;
+    }
+
     const average =
-      stats.reduce((sum, value) => sum + value, 0) /
-      stats.length;
+      stats.reduce(
+        (sum, value) => sum + value,
+        0
+      ) / stats.length;
 
     const matchingMainLines = mainLines.filter(
       (line) =>
@@ -665,16 +836,15 @@ async function generateAnalysis() {
         line.propType === main.propType
     );
 
-    const sportsbookLines = matchingMainLines.map(
-      (line) => ({
+    const sportsbookLines: DisplayLine[] =
+      matchingMainLines.map((line) => ({
         bookmaker: line.bookmaker,
         line: line.line,
         overOdds: line.overOdds,
         underOdds: line.underOdds,
-      })
-    );
+      }));
 
-    const alternatives: AlternateLine[] =
+    const alternatives: DisplayLine[] =
       matchingAlternates
         .map((line) => ({
           bookmaker: line.bookmaker,
@@ -684,7 +854,24 @@ async function generateAnalysis() {
         }))
         .sort((a, b) => a.line - b.line);
 
-    // Evaluate the Over and Under independently.
+    const gameDetails: GameDetail[] = recent.map(
+      (game, index) => ({
+        week: game.week,
+        value: stats[index],
+        targets: numericValue(game.targets),
+        receptions: numericValue(game.receptions),
+        rushingYards: numericValue(game.rushingYards),
+        receivingYards: numericValue(game.receivingYards),
+        passingYards: numericValue(game.passingYards),
+      })
+    );
+
+    const evidenceNotes = buildEvidenceNotes(
+      recent,
+      main.propType,
+      stats
+    );
+
     for (const side of ["Over", "Under"] as const) {
       const odds = getOddsForSide(main, side);
 
@@ -698,6 +885,12 @@ async function generateAnalysis() {
         side === "Over"
           ? average - main.line
           : main.line - average;
+
+      // Do not send historically weak or contradictory
+      // candidates to OpenAI simply to fill slots.
+      if (hits < 3 || directionalDifference <= 0) {
+        continue;
+      }
 
       const ticker = [
         "SPORTSBOOK",
@@ -730,6 +923,7 @@ async function generateAnalysis() {
         recentWeeks: recent.map(
           (game) => game.week
         ),
+        gameDetails,
         sampleSize: stats.length,
         average: round(average),
         historicalHits: hits,
@@ -739,16 +933,15 @@ async function generateAnalysis() {
         differenceFromLine: round(
           directionalDifference
         ),
-        // Retained for compatibility with the homepage.
-        // Sportsbook market volume is not supplied here.
         marketVolume: 0,
+        evidenceNotes,
+        opportunityVerified:
+          main.propType === "Receiving Yards" ||
+          main.propType === "Receptions",
       });
     }
   }
 
-  // Deduplicate identical player/prop/side combinations
-  // by choosing the strongest historical comparison,
-  // then the better quoted price.
   const bestByPlayerPropSide = new Map<
     string,
     Candidate
@@ -793,31 +986,40 @@ async function generateAnalysis() {
       (candidatesByPropType[candidate.propType] ?? 0) + 1;
   }
 
+  const baseReport = {
+    success: true,
+    analysisEnabled: true,
+    source: {
+      markets:
+        "DraftKings and FanDuel via The Odds API",
+      statistics: "nflverse",
+      analysis: "OpenAI",
+    },
+    season: nfl.season,
+    latestWeek: nfl.latestWeek,
+    sportsbookEventsChecked:
+      snapshot.eventsSucceeded,
+    sportsbookEventsAvailable:
+      snapshot.eventsAvailable,
+    sportsbookMainLinesChecked:
+      mainLines.length,
+    sportsbookAlternateLinesChecked:
+      alternateLines.length,
+    excludedForWeakEvidence,
+    candidatesReviewed: selected.length,
+    candidatesByPropType,
+  };
+
   if (selected.length === 0) {
     return {
-      success: true,
-      analysisEnabled: true,
-      source: {
-        markets: "DraftKings and FanDuel via The Odds API",
-        statistics: "nflverse",
-        analysis: "OpenAI",
-      },
-      season: nfl.season,
-      latestWeek: nfl.latestWeek,
-      sportsbookEventsChecked: snapshot.eventsSucceeded,
-      sportsbookEventsAvailable: snapshot.eventsAvailable,
-      sportsbookMainLinesChecked: mainLines.length,
-      sportsbookAlternateLinesChecked:
-        alternateLines.length,
-      candidatesReviewed: 0,
-      candidatesByPropType,
+      ...baseReport,
       recommendationsByPropType: {},
       count: 0,
       recommendations: [] as Recommendation[],
       updatedAt: new Date().toISOString(),
       message:
-        "No sportsbook props met the minimum " +
-        "historical data requirements.",
+        "No sportsbook props passed the stronger " +
+        "historical evidence requirements.",
       disclaimer:
         "Historical research is not a forecast " +
         "or guarantee of betting outcomes.",
@@ -827,82 +1029,95 @@ async function generateAnalysis() {
   const systemPrompt = `
 You are PropEdge AI, an NFL player-prop research assistant.
 
-Analyze ONLY the supplied verified data.
+Analyze ONLY the supplied data.
 
-These candidates use actual sportsbook MAIN lines
+All candidates use actual quoted sportsbook MAIN lines
 from DraftKings or FanDuel.
-
-Do not replace the main line with an alternate line.
 
 Each candidate includes:
 - Player and prop category
-- Over or Under direction
-- Main line and quoted American odds
-- Sportsbook name
-- Recent recorded game results
+- Over or Under
+- Main line and American odds
+- Sportsbook
+- Recent individual game results
+- Recent week numbers
 - Historical hit count
+- Recorded targets for receiving props
 - Other sportsbook main lines
-- Available alternate lines and odds
-- Game teams and scheduled game time
+- Available alternate lines
+- Scheduled game teams and time
+- Evidence limitations
 
-RULES:
+IMPORTANT RULES:
 
 1. Never invent injuries, depth chart changes,
-   snap shares, opponents' defensive rankings,
-   game spreads, totals, weather, or comparable
+   carry share, snap counts, defensive rankings,
+   weather, game spreads, totals, or comparable
    opponents' performances.
 
-2. If injury or matchup information is not supplied,
-   explicitly say it has not been verified.
+2. Never infer rushing attempts from rushing yards.
+   Rushing attempts are not supplied.
 
-3. Historical hit rates are NOT future probabilities.
+3. Recorded targets are available for some
+   receiving props, but targets are not snap counts.
 
-4. Do not claim positive expected value or a
-   profitable bet without a validated probability model.
+4. Do not call a player a starter, backup,
+   injured, inactive, or promoted unless
+   the supplied data establishes that fact.
 
-5. Never describe a recommendation as a lock,
-   guaranteed win, or sure thing.
+5. Never describe a historical hit rate
+   as a predicted win probability.
 
-6. Explain whether the recent average and individual
-   game results support the stated Over or Under.
+6. Never claim positive expected value without
+   a validated probability model.
 
-7. Discuss volatility and the limited sample size.
+7. Do not describe any recommendation
+   as a lock, guarantee, or sure thing.
 
-8. Quote sportsbook prices exactly as supplied.
+8. Explain the individual game results and
+   how they compare with the selected line.
 
-9. Do not claim an alternate line is available
-   unless it appears in the supplied data.
+9. For receiving props, discuss recorded
+   targets when available.
 
-10. Give a useful, detailed explanation of the
-    historical performance and sportsbook context.
-    Aim for roughly 100-160 words in "reason"
-    when sufficient data is available.
+10. Explain whether the player's recent
+    production appears consistent or volatile.
 
-11. Explain meaningful uncertainties in "risks".
+11. Quote sportsbook odds exactly.
 
-12. Use "worth_researching" only when the evidence
-    supports further investigation.
+12. Do not substitute an alternate line
+    for the main recommendation.
 
-13. Use "insufficient_evidence" when the data is
-    weak, contradictory, or incomplete.
+13. Do not claim alternate odds exist unless
+    they appear in the supplied data.
 
-14. Do not invent player names, tickers, statistics,
-    or sportsbook quotes.
+14. Explain missing matchup, injury, and
+    opportunity information in the risks.
 
-Return valid JSON only in this exact structure:
+15. Use "worth_researching" only if the
+    historical evidence genuinely supports
+    further investigation.
+
+16. Use "insufficient_evidence" when evidence
+    is weak, contradictory, or incomplete.
+
+17. Aim for 100-160 words in the reason
+    when enough verified information exists.
+
+18. Return one evaluation for every candidate.
+
+Return valid JSON only:
 
 {
   "evaluations": [
     {
       "ticker": "exact ticker from input",
       "verdict": "worth_researching",
-      "reason": "Detailed evidence-based explanation",
-      "risks": "Specific uncertainties and limitations"
+      "reason": "Evidence-based explanation",
+      "risks": "Specific uncertainties"
     }
   ]
 }
-
-Return one evaluation per candidate.
 
 Allowed verdicts:
 "worth_researching"
@@ -939,6 +1154,7 @@ Allowed verdicts:
         ],
       }),
       cache: "no-store",
+      signal: AbortSignal.timeout(60000),
     }
   );
 
@@ -1081,8 +1297,6 @@ Allowed verdicts:
     return true;
   }
 
-  // Prefer category variety when the AI finds
-  // worthwhile candidates in those categories.
   for (const category of CATEGORIES) {
     if (
       recommendations.length >=
@@ -1105,7 +1319,6 @@ Allowed verdicts:
     }
   }
 
-  // Fill remaining slots with worthwhile research.
   for (const item of ranked) {
     if (
       recommendations.length >=
@@ -1136,26 +1349,7 @@ Allowed verdicts:
   }
 
   return {
-    success: true,
-    analysisEnabled: true,
-    source: {
-      markets:
-        "DraftKings and FanDuel via The Odds API",
-      statistics: "nflverse",
-      analysis: "OpenAI",
-    },
-    season: nfl.season,
-    latestWeek: nfl.latestWeek,
-    sportsbookEventsChecked:
-      snapshot.eventsSucceeded,
-    sportsbookEventsAvailable:
-      snapshot.eventsAvailable,
-    sportsbookMainLinesChecked:
-      mainLines.length,
-    sportsbookAlternateLinesChecked:
-      alternateLines.length,
-    candidatesReviewed: selected.length,
-    candidatesByPropType,
+    ...baseReport,
     count: recommendations.length,
     recommendationsByPropType,
     recommendations,
@@ -1165,17 +1359,19 @@ Allowed verdicts:
       "results and quoted sportsbook prices. " +
       "It is not a validated forecast, an expected-value " +
       "calculation, or a guarantee of betting outcomes. " +
+      "Player availability and opponent matchup factors " +
+      "have not been independently verified. " +
       "Odds and availability may change.",
   };
 }
 
-// New cache key prevents reuse of the old Kalshi report.
+// New version prevents reuse of previous analysis.
 const getCachedAnalysis = unstable_cache(
   generateAnalysis,
-  ["propedge-ai-analysis-v4-sportsbook-main-lines"],
+  ["propedge-ai-analysis-v5-opportunity-filters"],
   {
     revalidate: CACHE_SECONDS,
-    tags: ["propedge-ai-analysis-v4"],
+    tags: ["propedge-ai-analysis-v5"],
   }
 );
 
@@ -1188,7 +1384,7 @@ async function publishToGitHub(
 
   if (!token) {
     throw new Error(
-      "GITHUB_PUBLISH_TOKEN is not configured in Vercel."
+      "GITHUB_PUBLISH_TOKEN is not configured."
     );
   }
 
@@ -1272,7 +1468,7 @@ async function publishToGitHub(
     },
     body: JSON.stringify({
       message:
-        "Publish sportsbook-based PropEdge AI research",
+        "Publish improved PropEdge AI NFL research",
       content,
       branch: GITHUB_BRANCH,
       ...(sha ? { sha } : {}),
@@ -1332,6 +1528,7 @@ export async function POST(request: NextRequest) {
         cacheDurationHours: 6,
         sportsbookGamesPerAnalysis:
           MAX_GAMES_TO_ANALYZE,
+        evidenceFilterVersion: 5,
       });
     }
 
