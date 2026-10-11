@@ -509,6 +509,49 @@ function defensiveContextForCandidate(
   };
 }
 
+// v9.1: Facts shown to users are constructed from verified numeric inputs,
+// rather than trusting the language model to recount hits or interpret defense.
+function verifiedRecommendationReason(candidate: Candidate): string {
+  const values = candidate.gameDetails
+    .map((game) => `week ${game.week}: ${round(game.value)}`)
+    .join(", ");
+  const result = `${candidate.historicalHits} of ${candidate.sampleSize}`;
+  const position = candidate.playerPosition;
+  const lead = `${candidate.player} recorded ${candidate.propType.toLowerCase()} of ${values}. ` +
+    `That is ${result} recorded games ${candidate.side.toLowerCase()} the ` +
+    `${candidate.line} ${candidate.bookmaker} main line (${candidate.odds > 0 ? "+" : ""}${candidate.odds}), ` +
+    `with a ${candidate.average} per-game average. `;
+
+  let matchupText = `Verified ${position}-specific defensive comparison is unavailable; ` +
+    `no favorable or unfavorable defensive matchup is assumed.`;
+  const matchup = candidate.positionDefensiveMatchup;
+  if (matchup && matchup.gamesPlayed >= 3 && matchup.teamsRanked >= 24) {
+    const metric = propMetric(candidate.propType);
+    const metrics: PositionMetric[] = metric
+      ? [metric]
+      : ["rushingYardsAllowedPerGame", "receivingYardsAllowedPerGame"];
+    const opponent = metrics.reduce((sum, key) => sum + matchup[key], 0);
+    const league = metrics.reduce((sum, key) => sum + matchup.leagueAverage[key], 0);
+    if (Number.isFinite(opponent) && Number.isFinite(league) && league > 0) {
+      const category = candidate.propType.toLowerCase();
+      const tendency = opponent > league
+        ? (candidate.side === "Over" ? "historically more favorable" : "historically less favorable")
+        : opponent < league
+          ? (candidate.side === "Over" ? "historically less favorable" : "historically more favorable")
+          : "roughly neutral";
+      const rankText = metric
+        ? ` Rank ${matchup.mostAllowedRank[metric]} of ${matchup.teamsRanked} (1 allows most).`
+        : " No combined defensive rank is calculated.";
+      matchupText = `${candidate.opponentTeam} allowed ${round(opponent)} ${category} per game ` +
+        `to opposing ${position}s combined across ${matchup.gamesPlayed} games, ` +
+        `versus a ${round(league)} league average. This is ${tendency} for an ${candidate.side}, ` +
+        `based on position-group history, not an individual-player forecast.${rankText}`;
+    }
+  }
+  return lead + matchupText +
+    " Historical hit rates are not future probabilities; player availability and usage remain unverified.";
+}
+
 function candidateScore(candidate: Candidate): number {
   const hitRate =
     candidate.historicalHitRate / 100;
@@ -816,14 +859,7 @@ function fallbackRecommendation(
   return {
     ...candidate,
     verdict: "insufficient_evidence",
-    reason:
-      `${candidate.player} averaged ${candidate.average} ` +
-      `${candidate.propType.toLowerCase()} across ` +
-      `${candidate.sampleSize} recent recorded games. ` +
-      `The ${candidate.side.toLowerCase()} ${candidate.line} ` +
-      `result occurred ${candidate.historicalHits} times. ` +
-      `The quoted ${candidate.bookmaker} price was ` +
-      `${candidate.odds > 0 ? "+" : ""}${candidate.odds}.`,
+    reason: verifiedRecommendationReason(candidate),
     risks:
       "This is a small historical sample. Playing time, " +
       "rushing attempts, injuries, opponent defense, " +
@@ -1377,7 +1413,7 @@ async function generateAnalysis() {
     defensiveLeagueBaselineAvailable: defenseBaselineAvailable,
     defensiveLeagueBaseline: null,
     defensivePositionSpecificEnabled: true,
-    rankingVersion: 9,
+    rankingVersion: 9.1,
     rankingDescription:
       "Historical player evidence plus capped position-specific opponent-vs-league defensive context; not a calibrated probability or expected-value model.",
     defensiveDataWarning: defenseResult.error || null,
@@ -1628,12 +1664,6 @@ Allowed verdicts:
         ? "worth_researching"
         : "insufficient_evidence";
 
-    const reason =
-      "reason" in item &&
-      typeof item.reason === "string"
-        ? item.reason
-        : "Review the historical statistics.";
-
     const risks =
       "risks" in item &&
       typeof item.risks === "string"
@@ -1643,7 +1673,7 @@ Allowed verdicts:
     evaluated.set(item.ticker, {
       ...verified,
       verdict,
-      reason,
+      reason: verifiedRecommendationReason(verified),
       risks,
     });
   }
@@ -1767,10 +1797,10 @@ Allowed verdicts:
 // Version 9 adds position-specific opponent defense and league-relative ranking.
 const getCachedAnalysis = unstable_cache(
   generateAnalysis,
-  ["propedge-ai-analysis-v9-position-specific-defense"],
+  ["propedge-ai-analysis-v9-1-verified-reasons"],
   {
     revalidate: CACHE_SECONDS,
-    tags: ["propedge-ai-analysis-v9"],
+    tags: ["propedge-ai-analysis-v9-1"],
   }
 );
 
@@ -1927,7 +1957,7 @@ export async function POST(request: NextRequest) {
         cacheDurationHours: 6,
         sportsbookGamesPerAnalysis:
           MAX_GAMES_TO_ANALYZE,
-        evidenceFilterVersion: 9,
+        evidenceFilterVersion: 9.1,
         leagueRelativeDefenseRankingEnabled: true,
         positionSpecificDefenseEnabled: true,
         defensiveContextEnabled: true,
