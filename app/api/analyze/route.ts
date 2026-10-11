@@ -690,6 +690,66 @@ function candidateScore(candidate: Candidate): number {
   );
 }
 
+// v11: A separate, stricter evidence shortlist. This is NOT a calibrated
+// probability estimate, and no candidate is included merely to fill slots.
+const MAX_HIGH_CONFIDENCE_RECOMMENDATIONS = 3;
+const CONFIDENCE_METHODOLOGY =
+  "At least 4 recorded games, 100% historical hits at the quoted main line, " +
+  "a directional average at least 15% beyond that line, verified position-specific " +
+  "defense that is not materially unfavorable, and no strongly conflicting " +
+  "same-position opponent distribution. Receiving props also require " +
+  "consistent recorded targets. These are screening criteria, NOT predicted win probabilities.";
+
+function qualifiesForHighConfidence(candidate: Recommendation): boolean {
+  if (candidate.verdict !== "worth_researching") return false;
+  if (!candidate.teamMatchVerified || candidate.sampleSize < 4) return false;
+  if (candidate.historicalHits !== candidate.sampleSize) return false;
+  if (candidate.recentValues.length !== candidate.sampleSize) return false;
+  if (!candidate.recentValues.every((value) => historicalHit(value, candidate.line, candidate.side))) return false;
+  if (!(candidate.line > 0) || candidate.differenceFromLine / candidate.line < 0.15) return false;
+  if (!Number.isFinite(candidate.odds) || !candidate.bookmaker) return false;
+
+  const defense = candidate.positionDefensiveMatchup;
+  if (!defense || defense.gamesPlayed < 4 || defense.teamsRanked < 24) return false;
+  if (stronglyUnfavorableDefense(candidate)) return false;
+  const metric = propMetric(candidate.propType);
+  const metrics: PositionMetric[] = metric
+    ? [metric]
+    : ["rushingYardsAllowedPerGame", "receivingYardsAllowedPerGame"];
+  const allowed = metrics.reduce((sum, key) => sum + defense[key], 0);
+  const baseline = metrics.reduce((sum, key) => sum + defense.leagueAverage[key], 0);
+  if (!(baseline > 0) || !Number.isFinite(allowed)) return false;
+  const relative = (allowed - baseline) / baseline;
+  if (candidate.side === "Over" ? relative < -0.05 : relative > 0.05) return false;
+
+  const distribution = opponentDistribution(candidate);
+  if (distribution?.conflicting) return false;
+
+  if (candidate.propType === "Receiving Yards" || candidate.propType === "Receptions") {
+    const targets = candidate.gameDetails.map((game) => game.targets);
+    if (targets.some((value) => value === null)) return false;
+    const recorded = targets as number[];
+    if (recorded.some((value) => value < 2)) return false;
+    if (recorded.reduce((sum, value) => sum + value, 0) / recorded.length < 3) return false;
+  }
+  return true;
+}
+
+function selectHighConfidence(recommendations: Recommendation[]): Recommendation[] {
+  const qualified = recommendations.filter(qualifiesForHighConfidence)
+    .sort((a, b) => candidateScore(b) - candidateScore(a));
+  const selected: Recommendation[] = [];
+  const players = new Set<string>();
+  for (const item of qualified) {
+    const player = normalizeName(item.player);
+    if (players.has(player)) continue;
+    players.add(player);
+    selected.push(item);
+    if (selected.length === MAX_HIGH_CONFIDENCE_RECOMMENDATIONS) break;
+  }
+  return selected;
+}
+
 function safeOddsError(status: number): string {
   if (status === 401 || status === 403) {
     return "Odds API key or plan was rejected.";
@@ -1527,7 +1587,9 @@ async function generateAnalysis() {
     defensiveLeagueBaselineAvailable: defenseBaselineAvailable,
     defensiveLeagueBaseline: null,
     defensivePositionSpecificEnabled: true,
-    rankingVersion: 10.1,
+    rankingVersion: 11,
+    confidenceMethodology: CONFIDENCE_METHODOLOGY,
+    highConfidenceCriteriaVersion: 1,
     distributionConflicts,
     individualOpponentDistributionEnabled: true,
     excludedForStrongDefensiveMatchup,
@@ -1546,6 +1608,7 @@ async function generateAnalysis() {
       recommendationsByPropType: {},
       count: 0,
       recommendations: [] as Recommendation[],
+      highConfidenceRecommendations: [] as Recommendation[],
       updatedAt: new Date().toISOString(),
       message:
         "No sportsbook props passed the team matching " +
@@ -1877,6 +1940,8 @@ Allowed verdicts:
     }
   }
 
+  const highConfidenceRecommendations = selectHighConfidence(allEvaluations);
+
   const recommendationsByPropType: Record<
     string,
     number
@@ -1896,6 +1961,8 @@ Allowed verdicts:
     count: recommendations.length,
     recommendationsByPropType,
     recommendations,
+    highConfidenceRecommendations,
+    highConfidenceCount: highConfidenceRecommendations.length,
     updatedAt: new Date().toISOString(),
     disclaimer:
       "AI-generated research uses recent historical " +
@@ -1912,13 +1979,13 @@ Allowed verdicts:
   };
 }
 
-// Version 9 adds position-specific opponent defense and league-relative ranking.
+// v11 adds a separately qualified high-confidence research shortlist.
 const getCachedAnalysis = unstable_cache(
   generateAnalysis,
-  ["propedge-ai-analysis-v10-1-distribution"],
+  ["propedge-ai-analysis-v11-confidence"],
   {
     revalidate: CACHE_SECONDS,
-    tags: ["propedge-ai-analysis-v10-1"],
+    tags: ["propedge-ai-analysis-v11"],
   }
 );
 
@@ -2075,7 +2142,8 @@ export async function POST(request: NextRequest) {
         cacheDurationHours: 6,
         sportsbookGamesPerAnalysis:
           MAX_GAMES_TO_ANALYZE,
-        evidenceFilterVersion: 10.1,
+        evidenceFilterVersion: 11,
+        highConfidenceShortlistEnabled: true,
         individualOpponentDistributionEnabled: true,
         leagueRelativeDefenseRankingEnabled: true,
         positionSpecificDefenseEnabled: true,
