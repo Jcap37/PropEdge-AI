@@ -3,6 +3,8 @@ import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
+const CURRENT_SEASON = 2026;
+
 const DATA_URL =
   "https://github.com/nflverse/nflverse-data/releases/download/player_stats/player_stats.csv";
 
@@ -19,14 +21,15 @@ export async function GET() {
     }
 
     const csv = await response.text();
-
-    const lines = csv.trim().split("\n");
+    const lines = csv.trim().split(/\r?\n/);
 
     if (lines.length < 2) {
       throw new Error("No player statistics found");
     }
 
-    const headers = lines[0].split(",");
+    const headers = lines[0]
+      .replace(/^\uFEFF/, "")
+      .split(",");
 
     const getIndex = (name: string) =>
       headers.indexOf(name);
@@ -42,20 +45,26 @@ export async function GET() {
     const receptionsIndex = getIndex("receptions");
     const targetsIndex = getIndex("targets");
 
-    const rows = lines.slice(1).map((line) =>
-      line.split(",")
-    );
+    const requiredColumns = [
+      seasonIndex,
+      weekIndex,
+      nameIndex,
+      teamIndex,
+      positionIndex,
+    ];
 
-    const seasons = rows
-      .map((row) => Number(row[seasonIndex]))
-      .filter(Number.isFinite);
+    if (requiredColumns.some((index) => index === -1)) {
+      throw new Error(
+        "NFL statistics file is missing required columns"
+      );
+    }
 
-    const latestSeason = Math.max(...seasons);
-
-    const players = rows
+    const players = lines
+      .slice(1)
+      .map((line) => line.split(","))
       .filter(
         (row) =>
-          Number(row[seasonIndex]) === latestSeason
+          Number(row[seasonIndex]) === CURRENT_SEASON
       )
       .map((row) => ({
         player: row[nameIndex],
@@ -64,15 +73,25 @@ export async function GET() {
         season: Number(row[seasonIndex]),
         week: Number(row[weekIndex]),
         passingYards:
-          Number(row[passingIndex]) || 0,
+          passingIndex >= 0
+            ? Number(row[passingIndex]) || 0
+            : 0,
         rushingYards:
-          Number(row[rushingIndex]) || 0,
+          rushingIndex >= 0
+            ? Number(row[rushingIndex]) || 0
+            : 0,
         receivingYards:
-          Number(row[receivingIndex]) || 0,
+          receivingIndex >= 0
+            ? Number(row[receivingIndex]) || 0
+            : 0,
         receptions:
-          Number(row[receptionsIndex]) || 0,
+          receptionsIndex >= 0
+            ? Number(row[receptionsIndex]) || 0
+            : 0,
         targets:
-          Number(row[targetsIndex]) || 0,
+          targetsIndex >= 0
+            ? Number(row[targetsIndex]) || 0
+            : 0,
       }))
       .filter((player) =>
         ["QB", "RB", "WR", "TE"].includes(
@@ -83,7 +102,7 @@ export async function GET() {
     return NextResponse.json({
       success: true,
       source: "nflverse",
-      season: latestSeason,
+      season: CURRENT_SEASON,
       count: players.length,
       players,
       updatedAt: new Date().toISOString(),
@@ -92,6 +111,9 @@ export async function GET() {
     return NextResponse.json(
       {
         success: false,
+        season: CURRENT_SEASON,
+        count: 0,
+        players: [],
         error:
           error instanceof Error
             ? error.message
