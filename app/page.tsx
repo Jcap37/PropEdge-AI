@@ -568,6 +568,7 @@ export default function Home() {
   const [publishedError, setPublishedError] = useState("");
   const [publicationWarning, setPublicationWarning] = useState("");
   const [reportSource, setReportSource] = useState("");
+  const [refreshStatus, setRefreshStatus] = useState("");
 
   const latestReportRef = useRef<AnalysisResponse | null>(null);
 
@@ -605,18 +606,35 @@ export default function Home() {
     []
   );
 
-  const loadPublishedResearch = useCallback(async () => {
+  const loadPublishedResearch = useCallback(async (showStatus = false) => {
     setPublishedLoading(true);
     setPublishedError("");
+    if (showStatus) setRefreshStatus("");
 
     try {
       const data = await fetchPublishedReport();
+      const previous = latestReportRef.current;
+      const previousTime = timestamp(previous?.updatedAt);
+      const incomingTime = timestamp(data.updatedAt);
       const applied = applyReport(data);
 
       if (!applied) {
         setPublishedError(
           "GitHub returned an older report. Your newer research has been kept on screen."
         );
+        return;
+      }
+
+      if (showStatus) {
+        if (previous && incomingTime === previousTime) {
+          setRefreshStatus(
+            "Refresh successful. You're already viewing the latest published research."
+          );
+        } else {
+          setRefreshStatus(
+            `Research updated successfully. Report generated ${displayDate(data.updatedAt)}.`
+          );
+        }
       }
     } catch (err) {
       setPublishedError(
@@ -635,6 +653,7 @@ export default function Home() {
     setAnalysisLoading(true);
     setAnalysisError("");
     setPublicationWarning("");
+    setRefreshStatus("");
     setAnalysisAttempted(true);
 
     try {
@@ -809,7 +828,7 @@ export default function Home() {
             <div className="flex flex-wrap gap-2">
               <button
                 type="button"
-                onClick={() => void loadPublishedResearch()}
+                onClick={() => void loadPublishedResearch(true)}
                 disabled={publishedLoading || analysisLoading}
                 className="flex items-center gap-2 rounded-lg border border-[#444] bg-[#171717] px-4 py-2 text-sm text-white hover:bg-[#252525] disabled:opacity-50"
               >
@@ -913,6 +932,16 @@ export default function Home() {
             <div className="mb-4 flex items-center gap-2 rounded-xl border border-yellow-900 bg-[#211b10] p-4 text-sm text-yellow-200">
               <ShieldAlert size={18} />
               {publicationWarning}
+            </div>
+          )}
+
+          {refreshStatus && !publishedLoading && (
+            <div
+              role="status"
+              className="mb-4 flex items-center gap-2 rounded-xl border border-[#365244] bg-[#142018] p-4 text-sm text-emerald-300"
+            >
+              <RefreshCw size={16} />
+              {refreshStatus}
             </div>
           )}
 
