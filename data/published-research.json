@@ -27,7 +27,9 @@
   "defensiveLeagueBaselineAvailable": true,
   "defensiveLeagueBaseline": null,
   "defensivePositionSpecificEnabled": true,
-  "rankingVersion": 11,
+  "rankingVersion": 11.1,
+  "headToHeadEnabled": true,
+  "headToHeadWarnings": [],
   "confidenceMethodology": "At least 4 recorded games, 100% historical hits at the quoted main line, a directional average at least 15% beyond that line, verified position-specific defense that is not materially unfavorable, and no strongly conflicting same-position opponent distribution. Receiving props also require consistent recorded targets. These are screening criteria, NOT predicted win probabilities.",
   "highConfidenceCriteriaVersion": 1,
   "distributionConflicts": 11,
@@ -64,7 +66,7 @@
       "homeTeam": "Los Angeles Rams",
       "awayTeam": "Buffalo Bills",
       "gameTime": "2026-10-13T00:15:00Z",
-      "lastOddsUpdate": "2026-10-11T17:07:01Z",
+      "lastOddsUpdate": "2026-10-11T17:15:34Z",
       "sportsbookLines": [
         {
           "bookmaker": "DraftKings",
@@ -1144,10 +1146,21 @@
       "opponentTeam": "Buffalo Bills",
       "defensiveRankingAdjustment": 0.0336,
       "defensiveComparison": "QB-only opponent allowance: 274 passing yards per game vs league 234.6 (above league average; rank 6 of 32 (1 = most allowed)); last 4 recorded opponent games: 1 featured at least one QB player over 278.5 passing yards. Group allowance is shared across players and does not predict one player's result. Ranking adjustment +3.4 points is descriptive, not win probability.",
+      "headToHead": [
+        {
+          "season": 2024,
+          "week": 14,
+          "opponent": "BUF",
+          "passingYards": 320,
+          "rushingYards": 0,
+          "receivingYards": 0,
+          "receptions": 0
+        }
+      ],
       "opportunityVerified": false,
       "verdict": "worth_researching",
-      "reason": "Matthew Stafford recorded passing yards of week 4: 317, week 3: 390, week 2: 327, week 1: 155. That is 3 of 4 recorded games over the 278.5 DraftKings main line (-112), with a 297.3 per-game average. Buffalo Bills allowed 274 passing yards per game to opposing QBs combined across 4 games, versus a 234.6 league average. This is historically more favorable for an Over, based on position-group history, not an individual-player forecast. Rank 6 of 32 (1 allows most). Recent opposing QB individual results (top performer each week): W4 Drake Maye 269; W3 Justin Herbert 226; W2 Jared Goff 327; W1 C.J. Stroud 274. Across 4 recorded QB player-game results, 1 finished over 278.5; these are not sportsbook outcomes or comparable roles.  Individual-opponent distribution sample is insufficient for a ranking adjustment. Historical hit rates are not future probabilities; player availability and usage remain unverified.",
-      "risks": "Injuries, snap counts, and other factors affecting game dynamics are not verified, which could impact Stafford's performance."
+      "reason": "Matthew Stafford recorded passing yards of week 4: 317, week 3: 390, week 2: 327, week 1: 155. That is 3 of 4 recorded games over the 278.5 DraftKings main line (-112), with a 297.3 per-game average. Player vs. Buffalo Bills history (1 prior regular-season meetings, most recent first): 2024 W14: 320 passing yards. Average 320; 1 of 1 would have finished over today's 278.5 line. These are historical comparisons to today's line, not the lines offered in those past games. Buffalo Bills allowed 274 passing yards per game to opposing QBs combined across 4 games, versus a 234.6 league average. This is historically more favorable for an Over, based on position-group history, not an individual-player forecast. Rank 6 of 32 (1 allows most). Recent opposing QB individual results (top performer each week): W4 Drake Maye 269; W3 Justin Herbert 226; W2 Jared Goff 327; W1 C.J. Stroud 274. Across 4 recorded QB player-game results, 1 finished over 278.5; these are not sportsbook outcomes or comparable roles.  Individual-opponent distribution sample is insufficient for a ranking adjustment. Historical hit rates are not future probabilities; player availability and usage remain unverified.",
+      "risks": "Injuries, snap counts, and other factors are unverified, which could impact performance."
     },
     {
       "ticker": "SPORTSBOOK-8e5d515b10d8a5ffb324640ed60bcc55-brockpurdy-RushingYards-draftkings-23.5-OVER",
@@ -1167,7 +1180,7 @@
       "homeTeam": "Seattle Seahawks",
       "awayTeam": "San Francisco 49ers",
       "gameTime": "2026-10-11T20:25:00Z",
-      "lastOddsUpdate": "2026-10-11T17:07:42Z",
+      "lastOddsUpdate": "2026-10-11T17:15:18Z",
       "sportsbookLines": [
         {
           "bookmaker": "DraftKings",
@@ -2142,10 +2155,66 @@
       "opponentTeam": "Seattle Seahawks",
       "defensiveRankingAdjustment": 0.05,
       "defensiveComparison": "QB-only opponent allowance: 26.3 rushing yards per game vs league 16.6 (above league average; rank 4 of 32 (1 = most allowed)); last 4 recorded opponent games: 2 featured at least one QB player over 23.5 rushing yards. Group allowance is shared across players and does not predict one player's result. Ranking adjustment +5 points is descriptive, not win probability.",
+      "headToHead": [
+        {
+          "season": 2025,
+          "week": 18,
+          "opponent": "SEA",
+          "passingYards": 127,
+          "rushingYards": 21,
+          "receivingYards": 0,
+          "receptions": 0
+        },
+        {
+          "season": 2025,
+          "week": 1,
+          "opponent": "SEA",
+          "passingYards": 277,
+          "rushingYards": 17,
+          "receivingYards": 0,
+          "receptions": 0
+        },
+        {
+          "season": 2024,
+          "week": 11,
+          "opponent": "SEA",
+          "passingYards": 159,
+          "rushingYards": 40,
+          "receivingYards": 0,
+          "receptions": 0
+        },
+        {
+          "season": 2024,
+          "week": 6,
+          "opponent": "SEA",
+          "passingYards": 255,
+          "rushingYards": 19,
+          "receivingYards": 0,
+          "receptions": 0
+        },
+        {
+          "season": 2023,
+          "week": 14,
+          "opponent": "SEA",
+          "passingYards": 368,
+          "rushingYards": 7,
+          "receivingYards": 0,
+          "receptions": 0
+        },
+        {
+          "season": 2023,
+          "week": 12,
+          "opponent": "SEA",
+          "passingYards": 209,
+          "rushingYards": 1,
+          "receivingYards": 0,
+          "receptions": 0
+        }
+      ],
       "opportunityVerified": false,
       "verdict": "worth_researching",
-      "reason": "Brock Purdy recorded rushing yards of week 4: 29, week 3: 34, week 2: 30, week 1: 29. That is 4 of 4 recorded games over the 23.5 DraftKings main line (-108), with a 30.5 per-game average. Seattle Seahawks allowed 26.3 rushing yards per game to opposing QBs combined across 4 games, versus a 16.6 league average. This is historically more favorable for an Over, based on position-group history, not an individual-player forecast. Rank 4 of 32 (1 allows most). Recent opposing QB individual results (top performer each week): W4 Justin Herbert 40; W3 Marcus Mariota 11; W2 Jacoby Brissett 7; W1 Drake Maye 47. Across 4 recorded QB player-game results, 2 finished over 23.5; these are not sportsbook outcomes or comparable roles.  Individual-opponent distribution sample is insufficient for a ranking adjustment. Historical hit rates are not future probabilities; player availability and usage remain unverified.",
-      "risks": "Injuries and other factors affecting team dynamics are not verified, which could impact Purdy's performance."
+      "reason": "Brock Purdy recorded rushing yards of week 4: 29, week 3: 34, week 2: 30, week 1: 29. That is 4 of 4 recorded games over the 23.5 DraftKings main line (-108), with a 30.5 per-game average. Player vs. Seattle Seahawks history (6 prior regular-season meetings, most recent first): 2025 W18: 21; 2025 W1: 17; 2024 W11: 40; 2024 W6: 19; 2023 W14: 7; 2023 W12: 1 rushing yards. Average 17.5; 1 of 6 would have finished over today's 23.5 line. These are historical comparisons to today's line, not the lines offered in those past games. Seattle Seahawks allowed 26.3 rushing yards per game to opposing QBs combined across 4 games, versus a 16.6 league average. This is historically more favorable for an Over, based on position-group history, not an individual-player forecast. Rank 4 of 32 (1 allows most). Recent opposing QB individual results (top performer each week): W4 Justin Herbert 40; W3 Marcus Mariota 11; W2 Jacoby Brissett 7; W1 Drake Maye 47. Across 4 recorded QB player-game results, 2 finished over 23.5; these are not sportsbook outcomes or comparable roles.  Individual-opponent distribution sample is insufficient for a ranking adjustment. Historical hit rates are not future probabilities; player availability and usage remain unverified.",
+      "risks": "Injuries and snap counts are unverified, which could impact his rushing attempts."
     },
     {
       "ticker": "SPORTSBOOK-86457f91112732f21ad4bb7d37bd291c-rashodbateman-ReceivingYards-draftkings-17.5-OVER",
@@ -2165,7 +2234,7 @@
       "homeTeam": "Atlanta Falcons",
       "awayTeam": "Baltimore Ravens",
       "gameTime": "2026-10-12T00:20:00Z",
-      "lastOddsUpdate": "2026-10-11T17:06:50Z",
+      "lastOddsUpdate": "2026-10-11T17:15:09Z",
       "sportsbookLines": [
         {
           "bookmaker": "DraftKings",
@@ -3244,10 +3313,11 @@
       "opponentTeam": "Atlanta Falcons",
       "defensiveRankingAdjustment": 0.05,
       "defensiveComparison": "WR-only opponent allowance: 195.3 receiving yards per game vs league 152.1 (above league average; rank 4 of 32 (1 = most allowed)); last 4 recorded opponent games: 4 featured at least one WR player over 17.5 receiving yards. Group allowance is shared across players and does not predict one player's result. Ranking adjustment +5 points is descriptive, not win probability.",
+      "headToHead": [],
       "opportunityVerified": true,
       "verdict": "worth_researching",
-      "reason": "Rashod Bateman recorded receiving yards of week 4: 46, week 3: 37, week 2: 88, week 1: 0. That is 3 of 4 recorded games over the 17.5 DraftKings main line (-113), with a 42.8 per-game average. Atlanta Falcons allowed 195.3 receiving yards per game to opposing WRs combined across 4 games, versus a 152.1 league average. This is historically more favorable for an Over, based on position-group history, not an individual-player forecast. Rank 4 of 32 (1 allows most). Recent opposing WR individual results (top performer each week): W4 Chris Olave 116; W3 Matthew Golden 100; W2 Tetairoa McMillan 101; W1 Michael Pittman 58. Across 18 recorded WR player-game results, 12 finished over 17.5; these are not sportsbook outcomes or comparable roles.  Same-position opponent distribution at the proposed 17.5 line: 12 of 18 individual player-games and 4 of 4 weekly top-performer results finished over. No strong negative individual-opponent distribution signal was detected. Opposing players can have different roles and usage; these are descriptive counts, not probabilities. Historical hit rates are not future probabilities; player availability and usage remain unverified.",
-      "risks": "Injuries and other factors affecting team dynamics are not verified, which could impact Bateman's opportunities."
+      "reason": "Rashod Bateman recorded receiving yards of week 4: 46, week 3: 37, week 2: 88, week 1: 0. That is 3 of 4 recorded games over the 17.5 DraftKings main line (-113), with a 42.8 per-game average. Player vs. Atlanta Falcons: no verified previous regular-season meetings found in the available historical dataset; no head-to-head trend is assumed. Atlanta Falcons allowed 195.3 receiving yards per game to opposing WRs combined across 4 games, versus a 152.1 league average. This is historically more favorable for an Over, based on position-group history, not an individual-player forecast. Rank 4 of 32 (1 allows most). Recent opposing WR individual results (top performer each week): W4 Chris Olave 116; W3 Matthew Golden 100; W2 Tetairoa McMillan 101; W1 Michael Pittman 58. Across 18 recorded WR player-game results, 12 finished over 17.5; these are not sportsbook outcomes or comparable roles.  Same-position opponent distribution at the proposed 17.5 line: 12 of 18 individual player-games and 4 of 4 weekly top-performer results finished over. No strong negative individual-opponent distribution signal was detected. Opposing players can have different roles and usage; these are descriptive counts, not probabilities. Historical hit rates are not future probabilities; player availability and usage remain unverified.",
+      "risks": "Injuries and snap counts are unverified, which may affect his targets and receptions."
     },
     {
       "ticker": "SPORTSBOOK-f8e7f43f73aa983c5c99c189587f0118-tylerallgeier-Receptions-draftkings-1.5-OVER",
@@ -3267,7 +3337,7 @@
       "homeTeam": "Arizona Cardinals",
       "awayTeam": "Detroit Lions",
       "gameTime": "2026-10-11T20:25:00Z",
-      "lastOddsUpdate": "2026-10-11T17:07:30Z",
+      "lastOddsUpdate": "2026-10-11T17:13:27Z",
       "sportsbookLines": [
         {
           "bookmaker": "DraftKings",
@@ -4250,10 +4320,21 @@
       "opponentTeam": "Detroit Lions",
       "defensiveRankingAdjustment": -0.0045,
       "defensiveComparison": "RB-only opponent allowance: 4.3 receptions per game vs league 4.4 (below league average; rank 16 of 32 (1 = most allowed)); last 4 recorded opponent games: 2 featured at least one RB player over 1.5 receptions. Group allowance is shared across players and does not predict one player's result. Ranking adjustment -0.5 points is descriptive, not win probability.",
+      "headToHead": [
+        {
+          "season": 2023,
+          "week": 3,
+          "opponent": "DET",
+          "passingYards": 0,
+          "rushingYards": 12,
+          "receivingYards": 17,
+          "receptions": 2
+        }
+      ],
       "opportunityVerified": true,
       "verdict": "worth_researching",
-      "reason": "Tyler Allgeier recorded receptions of week 4: 2, week 3: 4, week 2: 2, week 1: 2. That is 4 of 4 recorded games over the 1.5 DraftKings main line (-162), with a 2.5 per-game average. Detroit Lions allowed 4.3 receptions per game to opposing RBs combined across 4 games, versus a 4.4 league average. This is historically less favorable for an Over, based on position-group history, not an individual-player forecast. Rank 16 of 32 (1 allows most). Recent opposing RB individual results (top performer each week): W4 AJ Dillon 1; W3 Breece Hall 3; W2 James Cook 1; W1 Travis Etienne 7. Across 11 recorded RB player-game results, 3 finished over 1.5; these are not sportsbook outcomes or comparable roles.  Same-position opponent distribution at the proposed 1.5 line: 3 of 11 individual player-games and 2 of 4 weekly top-performer results finished over. No strong negative individual-opponent distribution signal was detected. Opposing players can have different roles and usage; these are descriptive counts, not probabilities. Historical hit rates are not future probabilities; player availability and usage remain unverified.",
-      "risks": "Injuries and other factors affecting team dynamics are not verified, which could impact Allgeier's performance."
+      "reason": "Tyler Allgeier recorded receptions of week 4: 2, week 3: 4, week 2: 2, week 1: 2. That is 4 of 4 recorded games over the 1.5 DraftKings main line (-162), with a 2.5 per-game average. Player vs. Detroit Lions history (1 prior regular-season meetings, most recent first): 2023 W3: 2 receptions. Average 2; 1 of 1 would have finished over today's 1.5 line. These are historical comparisons to today's line, not the lines offered in those past games. Detroit Lions allowed 4.3 receptions per game to opposing RBs combined across 4 games, versus a 4.4 league average. This is historically less favorable for an Over, based on position-group history, not an individual-player forecast. Rank 16 of 32 (1 allows most). Recent opposing RB individual results (top performer each week): W4 AJ Dillon 1; W3 Breece Hall 3; W2 James Cook 1; W1 Travis Etienne 7. Across 11 recorded RB player-game results, 3 finished over 1.5; these are not sportsbook outcomes or comparable roles.  Same-position opponent distribution at the proposed 1.5 line: 3 of 11 individual player-games and 2 of 4 weekly top-performer results finished over. No strong negative individual-opponent distribution signal was detected. Opposing players can have different roles and usage; these are descriptive counts, not probabilities. Historical hit rates are not future probabilities; player availability and usage remain unverified.",
+      "risks": "Injuries and snap counts are unverified, which could impact his usage."
     },
     {
       "ticker": "SPORTSBOOK-d1d408fdfd272046fb517fe992a1c5a0-omarionhampton-RushingReceivingYards-fanduel-51.5-OVER",
@@ -4273,7 +4354,7 @@
       "homeTeam": "Los Angeles Chargers",
       "awayTeam": "Denver Broncos",
       "gameTime": "2026-10-11T20:05:00Z",
-      "lastOddsUpdate": "2026-10-11T17:07:09Z",
+      "lastOddsUpdate": "2026-10-11T17:15:41Z",
       "sportsbookLines": [
         {
           "bookmaker": "DraftKings",
@@ -5261,10 +5342,21 @@
       "opponentTeam": "Denver Broncos",
       "defensiveRankingAdjustment": 0.025,
       "defensiveComparison": "RB-only opponent allowance: 150.8 combined rushing + receiving yards per game vs league 122.1 (above league average; combined rank not calculated); last 4 recorded opponent games: 4 featured at least one RB player over 51.5 combined rushing + receiving yards. Group allowance is shared across players and does not predict one player's result. Ranking adjustment +2.5 points is descriptive, not win probability.",
+      "headToHead": [
+        {
+          "season": 2025,
+          "week": 3,
+          "opponent": "DEN",
+          "passingYards": 0,
+          "rushingYards": 70,
+          "receivingYards": 59,
+          "receptions": 6
+        }
+      ],
       "opportunityVerified": false,
       "verdict": "worth_researching",
-      "reason": "Omarion Hampton recorded rushing + receiving yards of week 4: 53, week 3: 56, week 2: 115, week 1: 43. That is 3 of 4 recorded games over the 51.5 FanDuel main line (-111), with a 66.8 per-game average. Denver Broncos allowed 150.8 rushing + receiving yards per game to opposing RBs combined across 4 games, versus a 122.1 league average. This is historically more favorable for an Over, based on position-group history, not an individual-player forecast. No combined defensive rank is calculated. Recent opposing RB individual results (top performer each week): W4 Christian McCaffrey 70; W3 Kyren Williams 158; W2 Bhayshul Tuten 62; W1 Kenneth Walker III 191. Across 12 recorded RB player-game results, 5 finished over 51.5; these are not sportsbook outcomes or comparable roles.  Same-position opponent distribution at the proposed 51.5 line: 5 of 12 individual player-games and 4 of 4 weekly top-performer results finished over. No strong negative individual-opponent distribution signal was detected. Opposing players can have different roles and usage; these are descriptive counts, not probabilities. Historical hit rates are not future probabilities; player availability and usage remain unverified.",
-      "risks": "Injuries and other factors affecting team dynamics are not verified, which could impact Hampton's opportunities."
+      "reason": "Omarion Hampton recorded rushing + receiving yards of week 4: 53, week 3: 56, week 2: 115, week 1: 43. That is 3 of 4 recorded games over the 51.5 FanDuel main line (-111), with a 66.8 per-game average. Player vs. Denver Broncos history (1 prior regular-season meetings, most recent first): 2025 W3: 129 rushing + receiving yards. Average 129; 1 of 1 would have finished over today's 51.5 line. These are historical comparisons to today's line, not the lines offered in those past games. Denver Broncos allowed 150.8 rushing + receiving yards per game to opposing RBs combined across 4 games, versus a 122.1 league average. This is historically more favorable for an Over, based on position-group history, not an individual-player forecast. No combined defensive rank is calculated. Recent opposing RB individual results (top performer each week): W4 Christian McCaffrey 70; W3 Kyren Williams 158; W2 Bhayshul Tuten 62; W1 Kenneth Walker III 191. Across 12 recorded RB player-game results, 5 finished over 51.5; these are not sportsbook outcomes or comparable roles.  Same-position opponent distribution at the proposed 51.5 line: 5 of 12 individual player-games and 4 of 4 weekly top-performer results finished over. No strong negative individual-opponent distribution signal was detected. Opposing players can have different roles and usage; these are descriptive counts, not probabilities. Historical hit rates are not future probabilities; player availability and usage remain unverified.",
+      "risks": "Injuries and snap counts are unverified, which may affect his overall yardage."
     }
   ],
   "highConfidenceRecommendations": [
@@ -5286,7 +5378,7 @@
       "homeTeam": "Seattle Seahawks",
       "awayTeam": "San Francisco 49ers",
       "gameTime": "2026-10-11T20:25:00Z",
-      "lastOddsUpdate": "2026-10-11T17:07:42Z",
+      "lastOddsUpdate": "2026-10-11T17:15:18Z",
       "sportsbookLines": [
         {
           "bookmaker": "DraftKings",
@@ -6261,10 +6353,66 @@
       "opponentTeam": "Seattle Seahawks",
       "defensiveRankingAdjustment": 0.05,
       "defensiveComparison": "QB-only opponent allowance: 26.3 rushing yards per game vs league 16.6 (above league average; rank 4 of 32 (1 = most allowed)); last 4 recorded opponent games: 2 featured at least one QB player over 23.5 rushing yards. Group allowance is shared across players and does not predict one player's result. Ranking adjustment +5 points is descriptive, not win probability.",
+      "headToHead": [
+        {
+          "season": 2025,
+          "week": 18,
+          "opponent": "SEA",
+          "passingYards": 127,
+          "rushingYards": 21,
+          "receivingYards": 0,
+          "receptions": 0
+        },
+        {
+          "season": 2025,
+          "week": 1,
+          "opponent": "SEA",
+          "passingYards": 277,
+          "rushingYards": 17,
+          "receivingYards": 0,
+          "receptions": 0
+        },
+        {
+          "season": 2024,
+          "week": 11,
+          "opponent": "SEA",
+          "passingYards": 159,
+          "rushingYards": 40,
+          "receivingYards": 0,
+          "receptions": 0
+        },
+        {
+          "season": 2024,
+          "week": 6,
+          "opponent": "SEA",
+          "passingYards": 255,
+          "rushingYards": 19,
+          "receivingYards": 0,
+          "receptions": 0
+        },
+        {
+          "season": 2023,
+          "week": 14,
+          "opponent": "SEA",
+          "passingYards": 368,
+          "rushingYards": 7,
+          "receivingYards": 0,
+          "receptions": 0
+        },
+        {
+          "season": 2023,
+          "week": 12,
+          "opponent": "SEA",
+          "passingYards": 209,
+          "rushingYards": 1,
+          "receivingYards": 0,
+          "receptions": 0
+        }
+      ],
       "opportunityVerified": false,
       "verdict": "worth_researching",
-      "reason": "Brock Purdy recorded rushing yards of week 4: 29, week 3: 34, week 2: 30, week 1: 29. That is 4 of 4 recorded games over the 23.5 DraftKings main line (-108), with a 30.5 per-game average. Seattle Seahawks allowed 26.3 rushing yards per game to opposing QBs combined across 4 games, versus a 16.6 league average. This is historically more favorable for an Over, based on position-group history, not an individual-player forecast. Rank 4 of 32 (1 allows most). Recent opposing QB individual results (top performer each week): W4 Justin Herbert 40; W3 Marcus Mariota 11; W2 Jacoby Brissett 7; W1 Drake Maye 47. Across 4 recorded QB player-game results, 2 finished over 23.5; these are not sportsbook outcomes or comparable roles.  Individual-opponent distribution sample is insufficient for a ranking adjustment. Historical hit rates are not future probabilities; player availability and usage remain unverified.",
-      "risks": "Injuries and other factors affecting team dynamics are not verified, which could impact Purdy's performance."
+      "reason": "Brock Purdy recorded rushing yards of week 4: 29, week 3: 34, week 2: 30, week 1: 29. That is 4 of 4 recorded games over the 23.5 DraftKings main line (-108), with a 30.5 per-game average. Player vs. Seattle Seahawks history (6 prior regular-season meetings, most recent first): 2025 W18: 21; 2025 W1: 17; 2024 W11: 40; 2024 W6: 19; 2023 W14: 7; 2023 W12: 1 rushing yards. Average 17.5; 1 of 6 would have finished over today's 23.5 line. These are historical comparisons to today's line, not the lines offered in those past games. Seattle Seahawks allowed 26.3 rushing yards per game to opposing QBs combined across 4 games, versus a 16.6 league average. This is historically more favorable for an Over, based on position-group history, not an individual-player forecast. Rank 4 of 32 (1 allows most). Recent opposing QB individual results (top performer each week): W4 Justin Herbert 40; W3 Marcus Mariota 11; W2 Jacoby Brissett 7; W1 Drake Maye 47. Across 4 recorded QB player-game results, 2 finished over 23.5; these are not sportsbook outcomes or comparable roles.  Individual-opponent distribution sample is insufficient for a ranking adjustment. Historical hit rates are not future probabilities; player availability and usage remain unverified.",
+      "risks": "Injuries and snap counts are unverified, which could impact his rushing attempts."
     },
     {
       "ticker": "SPORTSBOOK-d1d408fdfd272046fb517fe992a1c5a0-courtlandsutton-Receptions-fanduel-3.5-UNDER",
@@ -6284,7 +6432,7 @@
       "homeTeam": "Los Angeles Chargers",
       "awayTeam": "Denver Broncos",
       "gameTime": "2026-10-11T20:05:00Z",
-      "lastOddsUpdate": "2026-10-11T17:07:09Z",
+      "lastOddsUpdate": "2026-10-11T17:15:41Z",
       "sportsbookLines": [
         {
           "bookmaker": "DraftKings",
@@ -7309,13 +7457,60 @@
       "opponentTeam": "Los Angeles Chargers",
       "defensiveRankingAdjustment": 0.0209,
       "defensiveComparison": "WR-only opponent allowance: 10.3 receptions per game vs league 11.5 (below league average; rank 22 of 32 (1 = most allowed)); last 4 recorded opponent games: 4 featured at least one WR player under 3.5 receptions. Group allowance is shared across players and does not predict one player's result. Ranking adjustment +2.1 points is descriptive, not win probability.",
+      "headToHead": [
+        {
+          "season": 2025,
+          "week": 18,
+          "opponent": "LAC",
+          "passingYards": 0,
+          "rushingYards": 0,
+          "receivingYards": 5,
+          "receptions": 1
+        },
+        {
+          "season": 2025,
+          "week": 3,
+          "opponent": "LAC",
+          "passingYards": 0,
+          "rushingYards": 0,
+          "receivingYards": 118,
+          "receptions": 6
+        },
+        {
+          "season": 2024,
+          "week": 16,
+          "opponent": "LAC",
+          "passingYards": 0,
+          "rushingYards": 0,
+          "receivingYards": 50,
+          "receptions": 5
+        },
+        {
+          "season": 2024,
+          "week": 6,
+          "opponent": "LAC",
+          "passingYards": 0,
+          "rushingYards": 0,
+          "receivingYards": 53,
+          "receptions": 4
+        },
+        {
+          "season": 2023,
+          "week": 14,
+          "opponent": "LAC",
+          "passingYards": 0,
+          "rushingYards": 0,
+          "receivingYards": 62,
+          "receptions": 3
+        }
+      ],
       "opportunityVerified": true,
       "verdict": "worth_researching",
-      "reason": "Courtland Sutton recorded receptions of week 4: 1, week 3: 3, week 2: 3, week 1: 2. That is 4 of 4 recorded games under the 3.5 FanDuel main line (-144), with a 2.3 per-game average. Los Angeles Chargers allowed 10.3 receptions per game to opposing WRs combined across 4 games, versus a 11.5 league average. This is historically more favorable for an Under, based on position-group history, not an individual-player forecast. Rank 22 of 32 (1 allows most). Recent opposing WR individual results (top performer each week): W4 Jaxon Smith-Njigba 5; W3 DJ Moore 6; W2 Tre Tucker 5; W1 Kendrick Bourne 8. Across 19 recorded WR player-game results, 14 finished under 3.5; these are not sportsbook outcomes or comparable roles.  Same-position opponent distribution at the proposed 3.5 line: 14 of 19 individual player-games and 4 of 4 weekly top-performer results finished under. No strong negative individual-opponent distribution signal was detected. Opposing players can have different roles and usage; these are descriptive counts, not probabilities. Historical hit rates are not future probabilities; player availability and usage remain unverified.",
-      "risks": "Injuries and other factors affecting team dynamics are not verified, which could impact Sutton's opportunities."
+      "reason": "Courtland Sutton recorded receptions of week 4: 1, week 3: 3, week 2: 3, week 1: 2. That is 4 of 4 recorded games under the 3.5 FanDuel main line (-144), with a 2.3 per-game average. Player vs. Los Angeles Chargers history (5 prior regular-season meetings, most recent first): 2025 W18: 1; 2025 W3: 6; 2024 W16: 5; 2024 W6: 4; 2023 W14: 3 receptions. Average 3.8; 2 of 5 would have finished under today's 3.5 line. These are historical comparisons to today's line, not the lines offered in those past games. Los Angeles Chargers allowed 10.3 receptions per game to opposing WRs combined across 4 games, versus a 11.5 league average. This is historically more favorable for an Under, based on position-group history, not an individual-player forecast. Rank 22 of 32 (1 allows most). Recent opposing WR individual results (top performer each week): W4 Jaxon Smith-Njigba 5; W3 DJ Moore 6; W2 Tre Tucker 5; W1 Kendrick Bourne 8. Across 19 recorded WR player-game results, 14 finished under 3.5; these are not sportsbook outcomes or comparable roles.  Same-position opponent distribution at the proposed 3.5 line: 14 of 19 individual player-games and 4 of 4 weekly top-performer results finished under. No strong negative individual-opponent distribution signal was detected. Opposing players can have different roles and usage; these are descriptive counts, not probabilities. Historical hit rates are not future probabilities; player availability and usage remain unverified.",
+      "risks": "Injuries and snap counts are unverified, which may affect his target share."
     }
   ],
   "highConfidenceCount": 2,
-  "updatedAt": "2026-10-11T17:08:19.379Z",
+  "updatedAt": "2026-10-11T17:16:13.378Z",
   "disclaimer": "AI-generated research uses recent historical results and quoted sportsbook prices. Player teams are matched using their latest recorded nflverse team, not live roster status. This is not a validated forecast, expected-value calculation, or guarantee of betting outcomes. Historical position-specific defensive group totals and capped league-relative ranking adjustments are included when available. These are not individual-player projections or predictive. Injuries and current defensive personnel remain unverified. Odds and availability may change."
 }
