@@ -2,19 +2,23 @@
   "success": true,
   "analysisEnabled": true,
   "source": {
-    "markets": "Kalshi",
+    "markets": "DraftKings and FanDuel via The Odds API",
     "statistics": "nflverse",
     "analysis": "OpenAI"
   },
   "season": 2026,
   "latestWeek": 5,
+  "sportsbookEventsChecked": 8,
+  "sportsbookEventsAvailable": 26,
+  "sportsbookMainLinesChecked": 506,
+  "sportsbookAlternateLinesChecked": 4689,
   "candidatesReviewed": 20,
   "candidatesByPropType": {
-    "Passing Yards": 4,
+    "Passing Yards": 1,
     "Rushing Yards": 4,
-    "Receiving Yards": 5,
-    "Receptions": 4,
-    "Rushing + Receiving Yards": 3
+    "Receiving Yards": 10,
+    "Receptions": 3,
+    "Rushing + Receiving Yards": 2
   },
   "count": 5,
   "recommendationsByPropType": {
@@ -26,116 +30,813 @@
   },
   "recommendations": [
     {
-      "ticker": "KXNFLPASSYDS-26OCT11MINNO-NOTSHOUGH6-150",
+      "ticker": "SPORTSBOOK-2cda9bf0fbe35a2735f0dd8aaafe9eff-tylershough-PassingYards-draftkings-237.5-OVER",
       "player": "Tyler Shough",
       "propType": "Passing Yards",
-      "line": 150,
-      "gameTime": "2026-10-11T20:00:00Z",
+      "line": 237.5,
+      "side": "Over",
+      "odds": -113,
+      "bookmaker": "DraftKings",
+      "bookmakerKey": "draftkings",
+      "source": "Sportsbook",
+      "eventId": "2cda9bf0fbe35a2735f0dd8aaafe9eff",
+      "homeTeam": "New Orleans Saints",
+      "awayTeam": "Minnesota Vikings",
+      "gameTime": "2026-10-11T17:00:00Z",
+      "lastOddsUpdate": "2026-10-11T04:59:44Z",
+      "sportsbookLines": [
+        {
+          "bookmaker": "DraftKings",
+          "line": 237.5,
+          "overOdds": -113,
+          "underOdds": -111
+        },
+        {
+          "bookmaker": "FanDuel",
+          "line": 237.5,
+          "overOdds": -113,
+          "underOdds": -113
+        }
+      ],
+      "alternateLines": [
+        {
+          "bookmaker": "FanDuel",
+          "line": 149.5,
+          "overOdds": -1450,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "DraftKings",
+          "line": 159.5,
+          "overOdds": -1280,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "DraftKings",
+          "line": 169.5,
+          "overOdds": -890,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "FanDuel",
+          "line": 174.5,
+          "overOdds": -650,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "DraftKings",
+          "line": 179.5,
+          "overOdds": -610,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "DraftKings",
+          "line": 189.5,
+          "overOdds": -423,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "DraftKings",
+          "line": 199.5,
+          "overOdds": -308,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "FanDuel",
+          "line": 199.5,
+          "overOdds": -310,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "DraftKings",
+          "line": 209.5,
+          "overOdds": -233,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "DraftKings",
+          "line": 219.5,
+          "overOdds": -179,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "FanDuel",
+          "line": 224.5,
+          "overOdds": -158,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "DraftKings",
+          "line": 229.5,
+          "overOdds": -138,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "DraftKings",
+          "line": 237.5,
+          "overOdds": -113,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "DraftKings",
+          "line": 239.5,
+          "overOdds": -107,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "DraftKings",
+          "line": 249.5,
+          "overOdds": 121,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "FanDuel",
+          "line": 249.5,
+          "overOdds": 118,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "DraftKings",
+          "line": 259.5,
+          "overOdds": 154,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "DraftKings",
+          "line": 269.5,
+          "overOdds": 200,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "FanDuel",
+          "line": 274.5,
+          "overOdds": 210,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "DraftKings",
+          "line": 279.5,
+          "overOdds": 259,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "DraftKings",
+          "line": 289.5,
+          "overOdds": 333,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "DraftKings",
+          "line": 299.5,
+          "overOdds": 422,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "FanDuel",
+          "line": 299.5,
+          "overOdds": 370,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "DraftKings",
+          "line": 309.5,
+          "overOdds": 534,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "DraftKings",
+          "line": 319.5,
+          "overOdds": 670,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "FanDuel",
+          "line": 324.5,
+          "overOdds": 640,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "DraftKings",
+          "line": 329.5,
+          "overOdds": 870,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "DraftKings",
+          "line": 339.5,
+          "overOdds": 1100,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "DraftKings",
+          "line": 349.5,
+          "overOdds": 1400,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "FanDuel",
+          "line": 349.5,
+          "overOdds": 1000,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "DraftKings",
+          "line": 359.5,
+          "overOdds": 1760,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "DraftKings",
+          "line": 369.5,
+          "overOdds": 2200,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "FanDuel",
+          "line": 374.5,
+          "overOdds": 1500,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "DraftKings",
+          "line": 379.5,
+          "overOdds": 2800,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "DraftKings",
+          "line": 389.5,
+          "overOdds": 3300,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "DraftKings",
+          "line": 399.5,
+          "overOdds": 4000,
+          "underOdds": null
+        }
+      ],
       "recentValues": [
         286,
         255,
         252,
         410
       ],
+      "recentWeeks": [
+        4,
+        3,
+        2,
+        1
+      ],
       "sampleSize": 4,
       "average": 300.8,
       "historicalHits": 4,
       "historicalHitRate": 100,
-      "differenceFromLine": 150.8,
-      "marketVolume": 1026.82,
-      "verdict": "worth_researching",
-      "reason": "Tyler Shough has consistently surpassed the passing yards line with an average of 300.8 yards over the last four games, hitting the mark in all instances.",
-      "risks": "While the historical hit rate is perfect, the sample size is small, and future performance may vary."
-    },
-    {
-      "ticker": "KXNFLRSHYDS-26OCT11CHIGB-CHIDSWIFT4-30",
-      "player": "D'Andre Swift",
-      "propType": "Rushing Yards",
-      "line": 30,
-      "gameTime": "2026-10-11T20:00:00Z",
-      "recentValues": [
-        58,
-        84,
-        45,
-        124
-      ],
-      "sampleSize": 4,
-      "average": 77.8,
-      "historicalHits": 4,
-      "historicalHitRate": 100,
-      "differenceFromLine": 47.8,
-      "marketVolume": 8459.79,
-      "verdict": "worth_researching",
-      "reason": "D'Andre Swift has shown strong performance with an average of 77.8 rushing yards, significantly above the line of 30 yards.",
-      "risks": "The small sample size of four games may not accurately predict future outcomes."
-    },
-    {
-      "ticker": "KXNFLRECYDSPROT-26OCT11INDPIT-PITJWARREN30-15",
-      "player": "Jaylen Warren",
-      "propType": "Receiving Yards",
-      "line": 15,
-      "gameTime": "2026-10-11T20:00:00Z",
-      "recentValues": [
-        33,
-        49,
-        34,
-        27
-      ],
-      "sampleSize": 4,
-      "average": 35.8,
-      "historicalHits": 4,
-      "historicalHitRate": 100,
-      "differenceFromLine": 20.8,
+      "differenceFromLine": 63.3,
       "marketVolume": 0,
       "verdict": "worth_researching",
-      "reason": "Jaylen Warren has consistently exceeded the receiving yards line with an average of 35.8 yards, hitting the mark in all four recent games.",
-      "risks": "The small sample size means that this trend may not hold in future games."
+      "reason": "Tyler Shough has shown impressive recent performance, averaging 300.8 passing yards over the last four games, with individual game results of 286, 255, 252, and 410 yards. His historical hit rate for this prop is 100%, hitting the over in all four games. The current line of 237.5 yards is significantly lower than his average by 63.3 yards, suggesting a favorable context for the over. However, the sample size is limited to four games, which introduces volatility in predicting future performance.",
+      "risks": "The main risk is the small sample size of four games, which may not accurately reflect his long-term performance. Additionally, any unverified factors such as opponent defense or game conditions could impact his ability to hit the over."
     },
     {
-      "ticker": "KXNFLREC-26OCT11SFSEA-SEAJSMITHNJIGBA11-4",
-      "player": "Jaxon Smith-Njigba",
-      "propType": "Receptions",
-      "line": 4,
-      "gameTime": "2026-10-11T23:25:00Z",
+      "ticker": "SPORTSBOOK-9db4ed15fe34fca1fb62f040cd244591-isaiahdavis-RushingYards-fanduel-11.5-UNDER",
+      "player": "Isaiah Davis",
+      "propType": "Rushing Yards",
+      "line": 11.5,
+      "side": "Under",
+      "odds": -113,
+      "bookmaker": "FanDuel",
+      "bookmakerKey": "fanduel",
+      "source": "Sportsbook",
+      "eventId": "9db4ed15fe34fca1fb62f040cd244591",
+      "homeTeam": "New York Jets",
+      "awayTeam": "Cleveland Browns",
+      "gameTime": "2026-10-11T17:00:00Z",
+      "lastOddsUpdate": "2026-10-11T04:59:36Z",
+      "sportsbookLines": [
+        {
+          "bookmaker": "DraftKings",
+          "line": 13.5,
+          "overOdds": -107,
+          "underOdds": -118
+        },
+        {
+          "bookmaker": "FanDuel",
+          "line": 11.5,
+          "overOdds": -113,
+          "underOdds": -113
+        }
+      ],
+      "alternateLines": [
+        {
+          "bookmaker": "FanDuel",
+          "line": 4.5,
+          "overOdds": -360,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "DraftKings",
+          "line": 9.5,
+          "overOdds": -167,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "FanDuel",
+          "line": 9.5,
+          "overOdds": -154,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "DraftKings",
+          "line": 13.5,
+          "overOdds": -107,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "DraftKings",
+          "line": 14.5,
+          "overOdds": 105,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "FanDuel",
+          "line": 14.5,
+          "overOdds": 126,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "DraftKings",
+          "line": 19.5,
+          "overOdds": 166,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "FanDuel",
+          "line": 19.5,
+          "overOdds": 205,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "DraftKings",
+          "line": 24.5,
+          "overOdds": 249,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "FanDuel",
+          "line": 24.5,
+          "overOdds": 310,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "DraftKings",
+          "line": 29.5,
+          "overOdds": 353,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "FanDuel",
+          "line": 29.5,
+          "overOdds": 430,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "DraftKings",
+          "line": 39.5,
+          "overOdds": 650,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "FanDuel",
+          "line": 39.5,
+          "overOdds": 800,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "DraftKings",
+          "line": 49.5,
+          "overOdds": 1100,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "DraftKings",
+          "line": 59.5,
+          "overOdds": 1700,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "DraftKings",
+          "line": 69.5,
+          "overOdds": 2500,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "DraftKings",
+          "line": 79.5,
+          "overOdds": 3600,
+          "underOdds": null
+        }
+      ],
       "recentValues": [
-        5,
-        10,
-        9,
-        8
+        0,
+        0,
+        0
+      ],
+      "recentWeeks": [
+        4,
+        3,
+        2
+      ],
+      "sampleSize": 3,
+      "average": 0,
+      "historicalHits": 3,
+      "historicalHitRate": 100,
+      "differenceFromLine": 11.5,
+      "marketVolume": 0,
+      "verdict": "worth_researching",
+      "reason": "Isaiah Davis has recorded zero rushing yards in his last three games, with an average of 0 yards. His historical hit rate is 100%, but this is based on a small sample size. The line of 11.5 yards is significantly higher than his average, indicating a strong likelihood of hitting the under based on recent performance.",
+      "risks": "The primary risk is the small sample size of three games, which may not provide a reliable indication of future performance. Additionally, any unverified factors such as game strategy or opponent defense could influence his rushing attempts."
+    },
+    {
+      "ticker": "SPORTSBOOK-cc52bba56e74f5cddbe9011046181c3d-xavierhutchinson-ReceivingYards-draftkings-15.5-OVER",
+      "player": "Xavier Hutchinson",
+      "propType": "Receiving Yards",
+      "line": 15.5,
+      "side": "Over",
+      "odds": -110,
+      "bookmaker": "DraftKings",
+      "bookmakerKey": "draftkings",
+      "source": "Sportsbook",
+      "eventId": "cc52bba56e74f5cddbe9011046181c3d",
+      "homeTeam": "Tennessee Titans",
+      "awayTeam": "Houston Texans",
+      "gameTime": "2026-10-11T17:00:00Z",
+      "lastOddsUpdate": "2026-10-11T04:59:53Z",
+      "sportsbookLines": [
+        {
+          "bookmaker": "DraftKings",
+          "line": 15.5,
+          "overOdds": -110,
+          "underOdds": -114
+        },
+        {
+          "bookmaker": "FanDuel",
+          "line": 16.5,
+          "overOdds": -113,
+          "underOdds": -113
+        }
+      ],
+      "alternateLines": [
+        {
+          "bookmaker": "FanDuel",
+          "line": 4.5,
+          "overOdds": -350,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "FanDuel",
+          "line": 9.5,
+          "overOdds": -210,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "DraftKings",
+          "line": 14.5,
+          "overOdds": -121,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "FanDuel",
+          "line": 14.5,
+          "overOdds": -136,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "DraftKings",
+          "line": 15.5,
+          "overOdds": -111,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "FanDuel",
+          "line": 19.5,
+          "overOdds": 114,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "DraftKings",
+          "line": 24.5,
+          "overOdds": 169,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "FanDuel",
+          "line": 24.5,
+          "overOdds": 158,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "FanDuel",
+          "line": 29.5,
+          "overOdds": 205,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "DraftKings",
+          "line": 39.5,
+          "overOdds": 378,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "FanDuel",
+          "line": 39.5,
+          "overOdds": 350,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "DraftKings",
+          "line": 49.5,
+          "overOdds": 620,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "FanDuel",
+          "line": 49.5,
+          "overOdds": 520,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "DraftKings",
+          "line": 59.5,
+          "overOdds": 1000,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "FanDuel",
+          "line": 59.5,
+          "overOdds": 800,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "DraftKings",
+          "line": 69.5,
+          "overOdds": 1600,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "FanDuel",
+          "line": 69.5,
+          "overOdds": 1100,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "DraftKings",
+          "line": 79.5,
+          "overOdds": 2400,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "FanDuel",
+          "line": 79.5,
+          "overOdds": 1500,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "DraftKings",
+          "line": 89.5,
+          "overOdds": 3400,
+          "underOdds": null
+        }
+      ],
+      "recentValues": [
+        46,
+        51,
+        37,
+        32
+      ],
+      "recentWeeks": [
+        4,
+        3,
+        2,
+        1
       ],
       "sampleSize": 4,
-      "average": 8,
+      "average": 41.5,
       "historicalHits": 4,
       "historicalHitRate": 100,
-      "differenceFromLine": 4,
-      "marketVolume": 401.18,
+      "differenceFromLine": 26,
+      "marketVolume": 0,
       "verdict": "worth_researching",
-      "reason": "Jaxon Smith-Njigba has an average of 8 receptions, well above the line of 4, and has hit this mark in all recent games.",
-      "risks": "The limited sample size may not be indicative of future performance."
+      "reason": "Xavier Hutchinson has consistently exceeded the 15.5 receiving yards line, averaging 41.5 yards over the last four games, with individual performances of 46, 51, 37, and 32 yards. His historical hit rate is 100%, hitting the over in all four games. The current line is significantly lower than his average by 25.5 yards, suggesting a favorable context for the over.",
+      "risks": "The main risk is the limited sample size of four games, which may not accurately predict future performance. Additionally, any unverified factors such as game conditions or defensive matchups could affect his ability to hit the over."
     },
     {
-      "ticker": "KXNFLRRYDS-26OCT11SFSEA-SFDSAMUEL19-50",
-      "player": "Deebo Samuel Sr.",
-      "propType": "Rushing + Receiving Yards",
-      "line": 50,
-      "gameTime": "2026-10-11T23:25:00Z",
+      "ticker": "SPORTSBOOK-6b024bad1abb54f597225e4ab9b39d89-treveyonhenderson-Receptions-fanduel-1.5-UNDER",
+      "player": "TreVeyon Henderson",
+      "propType": "Receptions",
+      "line": 1.5,
+      "side": "Under",
+      "odds": -160,
+      "bookmaker": "FanDuel",
+      "bookmakerKey": "fanduel",
+      "source": "Sportsbook",
+      "eventId": "6b024bad1abb54f597225e4ab9b39d89",
+      "homeTeam": "New England Patriots",
+      "awayTeam": "Las Vegas Raiders",
+      "gameTime": "2026-10-11T17:00:00Z",
+      "lastOddsUpdate": "2026-10-11T04:59:50Z",
+      "sportsbookLines": [
+        {
+          "bookmaker": "DraftKings",
+          "line": 1.5,
+          "overOdds": 141,
+          "underOdds": -181
+        },
+        {
+          "bookmaker": "FanDuel",
+          "line": 1.5,
+          "overOdds": 120,
+          "underOdds": -160
+        }
+      ],
+      "alternateLines": [
+        {
+          "bookmaker": "FanDuel",
+          "line": 0.5,
+          "overOdds": -380,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "FanDuel",
+          "line": 1.5,
+          "overOdds": 118,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "FanDuel",
+          "line": 2.5,
+          "overOdds": 350,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "FanDuel",
+          "line": 3.5,
+          "overOdds": 800,
+          "underOdds": null
+        }
+      ],
       "recentValues": [
-        70,
-        94,
-        35,
-        60
+        0,
+        1,
+        0
+      ],
+      "recentWeeks": [
+        4,
+        3,
+        2
+      ],
+      "sampleSize": 3,
+      "average": 0.3,
+      "historicalHits": 3,
+      "historicalHitRate": 100,
+      "differenceFromLine": 1.2,
+      "marketVolume": 0,
+      "verdict": "worth_researching",
+      "reason": "TreVeyon Henderson has recorded an average of 0.3 receptions over the last three games, with individual game results of 0, 1, and 0. His historical hit rate is 100%, but this is based on a small sample size. The line of 1.5 receptions is higher than his average, indicating a strong likelihood of hitting the under based on recent performance.",
+      "risks": "The primary risk is the small sample size of three games, which may not provide a reliable indication of future performance. Additionally, any unverified factors such as game strategy or opponent defense could influence his reception opportunities."
+    },
+    {
+      "ticker": "SPORTSBOOK-21b26266f3d78af02eb672e606275d95-willshipley-RushingReceivingYards-draftkings-52.5-UNDER",
+      "player": "Will Shipley",
+      "propType": "Rushing + Receiving Yards",
+      "line": 52.5,
+      "side": "Under",
+      "odds": -111,
+      "bookmaker": "DraftKings",
+      "bookmakerKey": "draftkings",
+      "source": "Sportsbook",
+      "eventId": "21b26266f3d78af02eb672e606275d95",
+      "homeTeam": "Jacksonville Jaguars",
+      "awayTeam": "Philadelphia Eagles",
+      "gameTime": "2026-10-11T13:30:00Z",
+      "lastOddsUpdate": "2026-10-11T04:59:27Z",
+      "sportsbookLines": [
+        {
+          "bookmaker": "DraftKings",
+          "line": 52.5,
+          "overOdds": -115,
+          "underOdds": -111
+        },
+        {
+          "bookmaker": "FanDuel",
+          "line": 52.5,
+          "overOdds": -115,
+          "underOdds": -111
+        }
+      ],
+      "alternateLines": [
+        {
+          "bookmaker": "DraftKings",
+          "line": 24.5,
+          "overOdds": -740,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "DraftKings",
+          "line": 39.5,
+          "overOdds": -241,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "DraftKings",
+          "line": 49.5,
+          "overOdds": -133,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "DraftKings",
+          "line": 52.5,
+          "overOdds": -114,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "DraftKings",
+          "line": 59.5,
+          "overOdds": 124,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "DraftKings",
+          "line": 69.5,
+          "overOdds": 197,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "DraftKings",
+          "line": 79.5,
+          "overOdds": 307,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "DraftKings",
+          "line": 89.5,
+          "overOdds": 467,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "DraftKings",
+          "line": 99.5,
+          "overOdds": 700,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "DraftKings",
+          "line": 109.5,
+          "overOdds": 1040,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "DraftKings",
+          "line": 119.5,
+          "overOdds": 1520,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "DraftKings",
+          "line": 129.5,
+          "overOdds": 2100,
+          "underOdds": null
+        },
+        {
+          "bookmaker": "DraftKings",
+          "line": 139.5,
+          "overOdds": 3000,
+          "underOdds": null
+        }
+      ],
+      "recentValues": [
+        23,
+        11,
+        29,
+        12
+      ],
+      "recentWeeks": [
+        4,
+        3,
+        2,
+        1
       ],
       "sampleSize": 4,
-      "average": 64.8,
-      "historicalHits": 3,
-      "historicalHitRate": 75,
-      "differenceFromLine": 14.8,
-      "marketVolume": 1741.89,
+      "average": 18.8,
+      "historicalHits": 4,
+      "historicalHitRate": 100,
+      "differenceFromLine": 33.8,
+      "marketVolume": 0,
       "verdict": "worth_researching",
-      "reason": "Deebo Samuel Sr. has averaged 64.8 combined rushing and receiving yards, exceeding the line of 50 yards in 75% of recent games.",
-      "risks": "The historical hit rate is lower than others, and the small sample size may not reflect future performance."
+      "reason": "Will Shipley has averaged only 18.8 rushing and receiving yards over his last four games, with individual performances of 23, 11, 29, and 12 yards. His historical hit rate is 100%, but this is based on a limited sample size. The line of 52.5 yards is significantly higher than his average by 33.8 yards, suggesting a strong likelihood of hitting the under.",
+      "risks": "The main risk is the small sample size, which may not accurately reflect his long-term performance. Additionally, any unverified factors such as game conditions or opponent defense could impact his ability to hit the under."
     }
   ],
-  "updatedAt": "2026-10-11T04:39:12.044Z",
-  "disclaimer": "AI-generated research is not a validated forecast or guarantee of betting outcomes."
+  "updatedAt": "2026-10-11T05:00:49.953Z",
+  "disclaimer": "AI-generated research uses recent historical results and quoted sportsbook prices. It is not a validated forecast, an expected-value calculation, or a guarantee of betting outcomes. Odds and availability may change."
 }
