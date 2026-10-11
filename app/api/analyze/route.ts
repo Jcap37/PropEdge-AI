@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { unstable_cache } from "next/cache";
 import { timingSafeEqual } from "node:crypto";
 import { getKalshiMarkets } from "../../../lib/kalshi";
-import { getNFLStats } from "../../../lib/nfl-stats";
+import { getNFLStats, type NFLPlayerGame } from "../../../lib/nfl-stats";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -30,83 +30,110 @@ function isAuthorized(request: NextRequest) {
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
+type SupportedProp =
+  | "Passing Yards"
+  | "Rushing Yards"
+  | "Receiving Yards"
+  | "Receptions"
+  | "Rushing + Receiving Yards";
+
+function statForProp(game: NFLPlayerGame, prop: SupportedProp): number | null {
+  switch (prop) {
+    case "Passing Yards": return game.passingYards;
+    case "Rushing Yards": return game.rushingYards;
+    case "Receiving Yards": return game.receivingYards;
+    case "Receptions": return game.receptions;
+    case "Rushing + Receiving Yards":
+      return game.rushingYards !== null && game.receivingYards !== null
+        ? game.rushingYards + game.receivingYards
+        : null;
+  }
+}
+
+function supportedProp(value: string): SupportedProp | null {
+  const allowed: SupportedProp[] = [
+    "Passing Yards", "Rushing Yards", "Receiving Yards",
+    "Receptions", "Rushing + Receiving Yards",
+  ];
+  return allowed.find((prop) => prop.toLowerCase() === value.toLowerCase()) ?? null;
+}
+
 async function generateAnalysis() {
   const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) throw new Error("OpenAI API key is not configured.");
 
-  if (!apiKey) {
-    throw new Error("OpenAI API key is not configured.");
-  }
-
-  const [kalshi, nfl] = await Promise.all([
-    getKalshiMarkets(),
-    getNFLStats(),
-  ]);
-
-  const playerGames = new Map<string, typeof nfl.players>();
+  const [kalshi, nfl] = await Promise.all([getKalshiMarkets(), getNFLStats()]);
+  const playerGames = new Map<string, NFLPlayerGame[]>();
 
   for (const game of nfl.players) {
-    if (game.position !== "QB") continue;
-
     const key = normalizeName(game.player);
     const existing = playerGames.get(key) ?? [];
-
     existing.push(game);
     playerGames.set(key, existing);
   }
 
-  const candidates = kalshi.markets
-    .map((market) => {
-      if (market.line === null) return null;
+  const candidates = kalshi.markets.flatMap((market) => {
+    const propType = supportedProp(market.propType ?? "");
+    if (!propType || market.line == null || !Number.isFinite(market.line)) return [];
 
-      const games = (
-        playerGames.get(normalizeName(market.player)) ?? []
-      )
-        .filter((game) => game.passingYards !== null)
-        .sort((a, b) => b.week - a.week)
-        .slice(0, 5);
+    const games = (playerGames.get(normalizeName(market.player)) ?? [])
+      .filter((game) => game.week <= nfl.latestWeek)
+      .sort((a, b) => b.week - a.week);
 
-      if (games.length < 3) return null;
+    // Use the last five recorded appearances, including zero-stat games.
+    // Missing statistics are excluded rather than treated as zero.
+    const recent = games.slice(0, 5);
+    const values = recent.map((game) => statForProp(game, propType));
+    if (recent.length < 3 || values.some((value) => value === null)) return [];
+    const stats = values as number[];
+    const average = stats.reduce((sum, value) => sum + value, 0) / stats.length;
+    const hits = stats.filter((value) => value >= market.line).length;
 
-      const yards = games.map(
-        (game) => game.passingYards as number
-      );
+    return [{
+      ticker: market.ticker,
+      player: market.player,
+      propType,
+      line: market.line,
+      gameTime: market.gameTime,
+      recentValues: stats,
+      sampleSize: stats.length,
+      average: Number(average.toFixed(1)),
+      historicalHits: hits,
+      historicalHitRate: Number((100 * hits / stats.length).toFixed(1)),
+      differenceFromLine: Number((average - market.line).toFixed(1)),
+      marketVolume: market.volume ?? 0,
+    }];
+  });
 
-      const average =
-        yards.reduce((sum, value) => sum + value, 0) /
-        yards.length;
-
-      const hits = yards.filter(
-        (value) => value >= market.line!
-      ).length;
-
-      return {
-        ticker: market.ticker,
-        player: market.player,
-        propType: market.propType,
-        line: market.line,
-        gameTime: market.gameTime,
-        recentPassingYards: yards,
-        sampleSize: yards.length,
-        averagePassingYards: Number(average.toFixed(1)),
-        historicalHits: hits,
-        historicalHitRate: Number(
-          ((hits / yards.length) * 100).toFixed(1)
-        ),
-        differenceFromLine: Number(
-          (average - market.line).toFixed(1)
-        ),
-      };
-    })
-    .filter(
-      (item): item is NonNullable<typeof item> =>
-        item !== null
-    )
-    .sort(
-      (a, b) =>
-        b.differenceFromLine - a.differenceFromLine
-    );
-
-  const selected = candidates.slice(0, 15);
+  // Avoid ranking incomparable yard and reception scales by raw difference.
+  // Give the model a balanced, diverse selection across stat categories.
+  const groups = new Map<SupportedProp, typeof candidates>();
+  for (const item of candidates) {
+    const group = groups.get(item.propType) ?? [];
+    group.push(item);
+    groups.set(item.propType, group);
+  }
+  for (const group of groups.values()) {
+    group.sort((a, b) => b.marketVolume - a.marketVolume);
+  }
+  const selected: typeof candidates = [];
+  const selectedTickers = new Set<string>();
+  const categories: SupportedProp[] = [
+    "Passing Yards", "Rushing Yards", "Receiving Yards",
+    "Receptions", "Rushing + Receiving Yards",
+  ];
+  for (let index = 0; selected.length < 15; index++) {
+    let added = false;
+    for (const category of categories) {
+      const item = groups.get(category)?.[index];
+      if (item && !selectedTickers.has(item.ticker) && selected.length < 15) {
+        selected.push(item);
+        selectedTickers.add(item.ticker);
+        added = true;
+      }
+    }
+    if (!added) break;
+  }
 
   if (selected.length === 0) {
     return {
@@ -132,6 +159,9 @@ Rules:
 - Never call a prop a guaranteed win or lock.
 - Explain both supporting evidence and uncertainty.
 - Samples of 3-5 games are limited evidence.
+- Compare each threshold ONLY to its own named statistic.
+- Some contracts are Protected or milestone contracts; do not assume standard settlement rules.
+- Do not treat the selection of candidates as evidence of profitability.
 - Never assume a player will start or play.
 - Do not claim positive expected value without
   validated probabilities and market prices.
@@ -298,10 +328,10 @@ Do not repeat players.
 // Reuse successful results for six hours.
 const getCachedAnalysis = unstable_cache(
   generateAnalysis,
-  ["propedge-ai-analysis-v1"],
+  ["propedge-ai-analysis-v2-multi-prop"],
   {
     revalidate: CACHE_SECONDS,
-    tags: ["propedge-ai-analysis"],
+    tags: ["propedge-ai-analysis-v2"],
   }
 );
 
