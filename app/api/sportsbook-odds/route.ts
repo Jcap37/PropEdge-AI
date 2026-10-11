@@ -35,7 +35,8 @@ const MARKET_LABELS: Record<string, string> = {
   player_rush_yds_alternate: "Rushing Yards",
   player_reception_yds_alternate: "Receiving Yards",
   player_receptions_alternate: "Receptions",
-  player_rush_reception_yds_alternate: "Rushing Yards",
+  player_rush_reception_yds_alternate:
+    "Rushing + Receiving Yards",
 };
 
 type EventData = {
