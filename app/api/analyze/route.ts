@@ -23,8 +23,58 @@ const ODDS_SPORT = "americanfootball_nfl";
 const MAX_GAMES_TO_ANALYZE = 8;
 const MAX_CANDIDATES_FOR_AI = 20;
 const MAX_RECOMMENDATIONS = 5;
-
 const BOOKMAKERS = "draftkings,fanduel";
+
+// These names correspond to the sportsbook event names.
+// LA and LAR both refer to the Los Angeles Rams.
+const TEAM_NAMES: Record<string, string> = {
+  ARI: "Arizona Cardinals",
+  ATL: "Atlanta Falcons",
+  BAL: "Baltimore Ravens",
+  BUF: "Buffalo Bills",
+  CAR: "Carolina Panthers",
+  CHI: "Chicago Bears",
+  CIN: "Cincinnati Bengals",
+  CLE: "Cleveland Browns",
+  DAL: "Dallas Cowboys",
+  DEN: "Denver Broncos",
+  DET: "Detroit Lions",
+  GB: "Green Bay Packers",
+  HOU: "Houston Texans",
+  IND: "Indianapolis Colts",
+  JAX: "Jacksonville Jaguars",
+  KC: "Kansas City Chiefs",
+  LA: "Los Angeles Rams",
+  LAC: "Los Angeles Chargers",
+  LV: "Las Vegas Raiders",
+  MIA: "Miami Dolphins",
+  MIN: "Minnesota Vikings",
+  NE: "New England Patriots",
+  NO: "New Orleans Saints",
+  NYG: "New York Giants",
+  NYJ: "New York Jets",
+  PHI: "Philadelphia Eagles",
+  PIT: "Pittsburgh Steelers",
+  SEA: "Seattle Seahawks",
+  SF: "San Francisco 49ers",
+  TB: "Tampa Bay Buccaneers",
+  TEN: "Tennessee Titans",
+  WAS: "Washington Commanders",
+};
+
+const TEAM_ALIASES: Record<string, string> = {
+  ARZ: "ARI",
+  BLT: "BAL",
+  CLV: "CLE",
+  HST: "HOU",
+  JAC: "JAX",
+  KAN: "KC",
+  LAR: "LA",
+  OAK: "LV",
+  SD: "LAC",
+  STL: "LA",
+  WSH: "WAS",
+};
 
 type SupportedProp =
   | "Passing Yards"
@@ -130,6 +180,10 @@ type GameDetail = {
 type Candidate = {
   ticker: string;
   player: string;
+  playerTeam: string;
+  playerTeamAbbr: string;
+  teamMatchVerified: boolean;
+  teamMatchSource: string;
   propType: SupportedProp;
   line: number;
   side: Side;
@@ -172,10 +226,40 @@ type OddsSnapshot = {
   failures: string[];
 };
 
+type TeamMatchResult = {
+  valid: boolean;
+  team: string;
+  abbreviation: string;
+  games: NFLPlayerGame[];
+  reason: string;
+};
+
 function normalizeName(name: string): string {
   return name
     .toLowerCase()
     .replace(/[^a-z0-9]/g, "");
+}
+
+function normalizeTeam(team: string): string | null {
+  const raw = team.trim().toUpperCase();
+
+  if (TEAM_NAMES[raw]) return raw;
+
+  if (TEAM_ALIASES[raw]) {
+    return TEAM_ALIASES[raw];
+  }
+
+  const normalized = normalizeName(team);
+
+  for (const [abbr, fullName] of Object.entries(
+    TEAM_NAMES
+  )) {
+    if (normalizeName(fullName) === normalized) {
+      return abbr;
+    }
+  }
+
+  return null;
 }
 
 function round(value: number): number {
@@ -202,6 +286,88 @@ function isAuthorized(request: NextRequest): boolean {
     a.length === b.length &&
     timingSafeEqual(a, b)
   );
+}
+
+// This verifies a team match using the latest recorded
+// nflverse team, not a live roster or injury report.
+function verifyPlayerTeam(
+  games: NFLPlayerGame[],
+  homeTeam: string,
+  awayTeam: string
+): TeamMatchResult {
+  const rejected: TeamMatchResult = {
+    valid: false,
+    team: "",
+    abbreviation: "",
+    games: [],
+    reason: "Unable to verify player team.",
+  };
+
+  if (games.length === 0) return rejected;
+
+  const ordered = [...games].sort(
+    (a, b) => b.week - a.week
+  );
+
+  const latestWeek = ordered[0].week;
+
+  const latestRecords = ordered.filter(
+    (game) => game.week === latestWeek
+  );
+
+  const latestTeams = new Set(
+    latestRecords.map((game) =>
+      normalizeTeam(game.team)
+    )
+  );
+
+  // Reject ambiguous latest-week team assignments.
+  if (
+    latestTeams.size !== 1 ||
+    latestTeams.has(null)
+  ) {
+    return {
+      ...rejected,
+      reason: "Ambiguous latest-week team assignment.",
+    };
+  }
+
+  const latestTeam = [...latestTeams][0];
+
+  if (!latestTeam) return rejected;
+
+  const homeAbbr = normalizeTeam(homeTeam);
+  const awayAbbr = normalizeTeam(awayTeam);
+
+  if (!homeAbbr || !awayAbbr) {
+    return {
+      ...rejected,
+      reason: "Unrecognized sportsbook matchup team.",
+    };
+  }
+
+  if (
+    latestTeam !== homeAbbr &&
+    latestTeam !== awayAbbr
+  ) {
+    return {
+      ...rejected,
+      reason: "Player team does not match matchup.",
+    };
+  }
+
+  const matchingGames = ordered.filter(
+    (game) =>
+      normalizeTeam(game.team) === latestTeam
+  );
+
+  return {
+    valid: true,
+    team: TEAM_NAMES[latestTeam],
+    abbreviation: latestTeam,
+    games: matchingGames,
+    reason: "Latest recorded nflverse team matches event.",
+  };
 }
 
 function statForProp(
@@ -376,7 +542,6 @@ function extractSportsbookLines(
         }
 
         const player = outcome.description.trim();
-
         const key =
           `${normalizeName(player)}|${outcome.point}`;
 
@@ -576,9 +741,20 @@ function fallbackRecommendation(
 function buildEvidenceNotes(
   games: NFLPlayerGame[],
   prop: SupportedProp,
-  values: number[]
+  values: number[],
+  playerTeam: string
 ): string[] {
   const notes: string[] = [];
+
+  notes.push(
+    `The player's latest recorded nflverse team is ` +
+      `${playerTeam}, which matches the scheduled game.`
+  );
+
+  notes.push(
+    "Team matching is based on historical weekly stats, " +
+      "not an independently verified current roster."
+  );
 
   const zeroGames = values.filter(
     (value) => value === 0
@@ -608,7 +784,7 @@ function buildEvidenceNotes(
         ) / validTargets.length;
 
       notes.push(
-        `Recorded targets by recent week: ` +
+        `Recorded targets, newest first: ` +
           validTargets.join(", ") +
           `. Average targets: ${round(averageTargets)}.`
       );
@@ -624,8 +800,7 @@ function buildEvidenceNotes(
     prop === "Rushing + Receiving Yards"
   ) {
     notes.push(
-      "Rushing attempts and carry share are not available " +
-        "in the current stats feed."
+      "Rushing attempts and carry share are not available."
     );
   }
 
@@ -648,16 +823,9 @@ function passesEvidenceFilters(
     (value) => value > 0
   ).length;
 
-  // Exclude samples dominated by zero-stat games.
-  // This prevents inactive or rarely used players
-  // from ranking highly based on automatic unders.
   if (positiveGames < 3) return false;
 
-  const mostRecent = values[0];
-
-  // Avoid players whose latest recorded game
-  // provides no production evidence.
-  if (mostRecent === 0) return false;
+  if (values[0] === 0) return false;
 
   if (
     prop === "Receiving Yards" ||
@@ -683,7 +851,6 @@ function passesEvidenceFilters(
         0
       ) / validTargets.length;
 
-    // Require actual recorded receiving opportunities.
     if (
       targetedGames < 3 ||
       averageTargets < 2 ||
@@ -694,9 +861,6 @@ function passesEvidenceFilters(
   }
 
   if (prop === "Rushing Yards") {
-    // We cannot verify rushing attempts yet.
-    // Require meaningful recorded rushing production
-    // rather than automatically counting zeroes.
     const positiveRushingGames = games.filter(
       (game) =>
         (numericValue(game.rushingYards) ?? 0) > 0
@@ -783,13 +947,44 @@ async function generateAnalysis() {
   );
 
   const candidates: Candidate[] = [];
+
   let excludedForWeakEvidence = 0;
+  let excludedForTeamMismatch = 0;
+  let excludedForAmbiguousPlayer = 0;
 
   for (const main of mainLines) {
-    const games =
+    const allGames =
       playerGames.get(normalizeName(main.player)) ?? [];
 
-    const recent = games.slice(0, 5);
+    if (allGames.length === 0) continue;
+
+    // Different display names can normalize to the
+    // same string. Reject these ambiguous identities.
+    const distinctNames = new Set(
+      allGames.map((game) =>
+        game.player.trim().toLowerCase()
+      )
+    );
+
+    if (distinctNames.size > 1) {
+      excludedForAmbiguousPlayer++;
+      continue;
+    }
+
+    const teamMatch = verifyPlayerTeam(
+      allGames,
+      main.homeTeam,
+      main.awayTeam
+    );
+
+    if (!teamMatch.valid) {
+      excludedForTeamMismatch++;
+      continue;
+    }
+
+    // Only use stats recorded with the matched team.
+    // Do not silently mix in prior-team performances.
+    const recent = teamMatch.games.slice(0, 5);
 
     if (recent.length < 4) continue;
 
@@ -869,7 +1064,8 @@ async function generateAnalysis() {
     const evidenceNotes = buildEvidenceNotes(
       recent,
       main.propType,
-      stats
+      stats,
+      teamMatch.team
     );
 
     for (const side of ["Over", "Under"] as const) {
@@ -886,8 +1082,6 @@ async function generateAnalysis() {
           ? average - main.line
           : main.line - average;
 
-      // Do not send historically weak or contradictory
-      // candidates to OpenAI simply to fill slots.
       if (hits < 3 || directionalDifference <= 0) {
         continue;
       }
@@ -905,6 +1099,11 @@ async function generateAnalysis() {
       candidates.push({
         ticker,
         player: main.player,
+        playerTeam: teamMatch.team,
+        playerTeamAbbr: teamMatch.abbreviation,
+        teamMatchVerified: true,
+        teamMatchSource:
+          "nflverse latest recorded team vs sportsbook event",
         propType: main.propType,
         line: main.line,
         side,
@@ -1006,6 +1205,8 @@ async function generateAnalysis() {
     sportsbookAlternateLinesChecked:
       alternateLines.length,
     excludedForWeakEvidence,
+    excludedForTeamMismatch,
+    excludedForAmbiguousPlayer,
     candidatesReviewed: selected.length,
     candidatesByPropType,
   };
@@ -1018,8 +1219,8 @@ async function generateAnalysis() {
       recommendations: [] as Recommendation[],
       updatedAt: new Date().toISOString(),
       message:
-        "No sportsbook props passed the stronger " +
-        "historical evidence requirements.",
+        "No sportsbook props passed the team matching " +
+        "and historical evidence requirements.",
       disclaimer:
         "Historical research is not a forecast " +
         "or guarantee of betting outcomes.",
@@ -1031,24 +1232,27 @@ You are PropEdge AI, an NFL player-prop research assistant.
 
 Analyze ONLY the supplied data.
 
-All candidates use actual quoted sportsbook MAIN lines
+All candidates use quoted sportsbook MAIN lines
 from DraftKings or FanDuel.
 
-Each candidate includes:
-- Player and prop category
-- Over or Under
-- Main line and American odds
-- Sportsbook
+The player's latest recorded nflverse team has been
+checked against the scheduled sportsbook matchup.
+
+This does NOT independently verify current roster
+status or availability.
+
+Candidates include:
+- Player and matched historical team
+- Prop category and direction
+- Main sportsbook line and American odds
 - Recent individual game results
-- Recent week numbers
-- Historical hit count
 - Recorded targets for receiving props
 - Other sportsbook main lines
 - Available alternate lines
 - Scheduled game teams and time
 - Evidence limitations
 
-IMPORTANT RULES:
+RULES:
 
 1. Never invent injuries, depth chart changes,
    carry share, snap counts, defensive rankings,
@@ -1056,55 +1260,48 @@ IMPORTANT RULES:
    opponents' performances.
 
 2. Never infer rushing attempts from rushing yards.
-   Rushing attempts are not supplied.
 
-3. Recorded targets are available for some
-   receiving props, but targets are not snap counts.
+3. Recorded targets do not establish snap counts.
 
 4. Do not call a player a starter, backup,
-   injured, inactive, or promoted unless
-   the supplied data establishes that fact.
+   injured, inactive, or promoted unless supplied
+   evidence establishes that status.
 
-5. Never describe a historical hit rate
-   as a predicted win probability.
+5. Historical hit rates are not future probabilities.
 
 6. Never claim positive expected value without
    a validated probability model.
 
-7. Do not describe any recommendation
-   as a lock, guarantee, or sure thing.
+7. Never describe a recommendation as guaranteed.
 
-8. Explain the individual game results and
-   how they compare with the selected line.
+8. Explain individual game results and how
+   they compare with the selected line.
 
-9. For receiving props, discuss recorded
-   targets when available.
+9. Discuss recorded targets for receiving props
+   when the information is available.
 
-10. Explain whether the player's recent
-    production appears consistent or volatile.
+10. Explain consistency and volatility.
 
 11. Quote sportsbook odds exactly.
 
 12. Do not substitute an alternate line
     for the main recommendation.
 
-13. Do not claim alternate odds exist unless
-    they appear in the supplied data.
+13. Do not invent alternate lines or prices.
 
-14. Explain missing matchup, injury, and
+14. Explain missing injury, matchup, and
     opportunity information in the risks.
 
-15. Use "worth_researching" only if the
-    historical evidence genuinely supports
-    further investigation.
+15. Use "worth_researching" only when the
+    evidence supports further investigation.
 
-16. Use "insufficient_evidence" when evidence
+16. Use "insufficient_evidence" when the data
     is weak, contradictory, or incomplete.
 
 17. Aim for 100-160 words in the reason
-    when enough verified information exists.
+    when enough information is available.
 
-18. Return one evaluation for every candidate.
+18. Return one evaluation per candidate.
 
 Return valid JSON only:
 
@@ -1357,21 +1554,23 @@ Allowed verdicts:
     disclaimer:
       "AI-generated research uses recent historical " +
       "results and quoted sportsbook prices. " +
-      "It is not a validated forecast, an expected-value " +
-      "calculation, or a guarantee of betting outcomes. " +
-      "Player availability and opponent matchup factors " +
-      "have not been independently verified. " +
+      "Player teams are matched using their latest " +
+      "recorded nflverse team, not live roster status. " +
+      "This is not a validated forecast, expected-value " +
+      "calculation, or guarantee of betting outcomes. " +
+      "Injuries and defensive matchups remain unverified. " +
       "Odds and availability may change.",
   };
 }
 
-// New version prevents reuse of previous analysis.
+// Version 6 forces a fresh analysis instead of
+// reusing the earlier cached recommendations.
 const getCachedAnalysis = unstable_cache(
   generateAnalysis,
-  ["propedge-ai-analysis-v5-opportunity-filters"],
+  ["propedge-ai-analysis-v6-team-matching"],
   {
     revalidate: CACHE_SECONDS,
-    tags: ["propedge-ai-analysis-v5"],
+    tags: ["propedge-ai-analysis-v6"],
   }
 );
 
@@ -1468,7 +1667,7 @@ async function publishToGitHub(
     },
     body: JSON.stringify({
       message:
-        "Publish improved PropEdge AI NFL research",
+        "Publish team-verified PropEdge AI research",
       content,
       branch: GITHUB_BRANCH,
       ...(sha ? { sha } : {}),
@@ -1528,7 +1727,8 @@ export async function POST(request: NextRequest) {
         cacheDurationHours: 6,
         sportsbookGamesPerAnalysis:
           MAX_GAMES_TO_ANALYZE,
-        evidenceFilterVersion: 5,
+        evidenceFilterVersion: 6,
+        teamMatchingEnabled: true,
       });
     }
 
