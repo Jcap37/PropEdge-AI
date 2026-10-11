@@ -9,6 +9,8 @@ import {
 import {
   getNFLDefenseStats,
   type DefensiveMatchup,
+  type PlayerPosition,
+  type PositionDefensiveMatchup,
 } from "../../../lib/nfl-defense";
 
 export const runtime = "nodejs";
@@ -214,6 +216,8 @@ type Candidate = {
   marketVolume: number;
   evidenceNotes: string[];
   defensiveMatchup: DefensiveMatchup | null;
+  playerPosition: PlayerPosition;
+  positionDefensiveMatchup: PositionDefensiveMatchup | null;
   opponentTeam: string;
   // Neutral (0) when league context is missing or unsuitable.
   defensiveRankingAdjustment: number;
@@ -427,104 +431,81 @@ function getOddsForSide(
     : line.underOdds;
 }
 
-type DefenseMetric =
+// Use the defense's production allowed to the player's POSITION, not all players.
+// Rank 1 = most allowed, so it is favorable for Overs, not Unders.
+type PositionMetric =
   | "passingYardsAllowedPerGame"
   | "rushingYardsAllowedPerGame"
   | "receivingYardsAllowedPerGame"
   | "receptionsAllowedPerGame";
 
-type LeagueDefenseBaseline = Record<DefenseMetric, number>;
-
-// Weight each defense by recorded games rather than averaging team averages.
-// This is a descriptive league baseline, NOT a projected win probability.
-function buildLeagueDefenseBaseline(
-  teams: Record<string, DefensiveMatchup>
-): LeagueDefenseBaseline | null {
-  const metrics: DefenseMetric[] = [
-    "passingYardsAllowedPerGame",
-    "rushingYardsAllowedPerGame",
-    "receivingYardsAllowedPerGame",
-    "receptionsAllowedPerGame",
-  ];
-  const eligible = Object.values(teams).filter(
-    (team) => team.verified && team.gamesPlayed >= 3
-  );
-  // Avoid a misleading baseline from a small or partial dataset.
-  if (eligible.length < 24) return null;
-
-  const totalGames = eligible.reduce(
-    (sum, team) => sum + team.gamesPlayed, 0
-  );
-  if (totalGames <= 0) return null;
-
-  const result = {} as LeagueDefenseBaseline;
-  for (const metric of metrics) {
-    const sum = eligible.reduce(
-      (total, team) => total + team[metric] * team.gamesPlayed,
-      0
-    );
-    result[metric] = sum / totalGames;
-    if (!Number.isFinite(result[metric]) || result[metric] <= 0) {
-      return null;
-    }
+function propMetric(prop: SupportedProp): PositionMetric | null {
+  switch (prop) {
+    case "Passing Yards": return "passingYardsAllowedPerGame";
+    case "Rushing Yards": return "rushingYardsAllowedPerGame";
+    case "Receiving Yards": return "receivingYardsAllowedPerGame";
+    case "Receptions": return "receptionsAllowedPerGame";
+    default: return null;
   }
-  return result;
+}
+
+function getPosition(value: string | null | undefined): PlayerPosition | null {
+  const position = (value ?? "").toUpperCase();
+  return position === "QB" || position === "RB" ||
+    position === "WR" || position === "TE"
+    ? position : null;
 }
 
 function defensiveContextForCandidate(
-  matchup: DefensiveMatchup | null,
-  baseline: LeagueDefenseBaseline | null,
+  matchup: PositionDefensiveMatchup | null,
   prop: SupportedProp,
   side: Side,
-  position: string | null
+  line: number
 ): { adjustment: number; comparison: string } {
-  if (!matchup || !baseline || !matchup.verified || matchup.gamesPlayed < 3) {
-    return { adjustment: 0, comparison: "No reliable league defensive comparison available." };
+  const metric = propMetric(prop);
+  if (!matchup || matchup.gamesPlayed < 3 || matchup.teamsRanked < 24) {
+    return { adjustment: 0, comparison: "Insufficient position-specific defensive data; no defensive ranking adjustment." };
   }
-
-  let metric: DefenseMetric;
-  let maxAdjustment = 0.05;
-  switch (prop) {
-    case "Passing Yards":
-      metric = "passingYardsAllowedPerGame";
-      break;
-    case "Rushing Yards":
-      metric = "rushingYardsAllowedPerGame";
-      // Team rushing defense is especially weak evidence for a QB's rushing.
-      maxAdjustment = position === "QB" ? 0.01 : 0.04;
-      break;
-    case "Receiving Yards":
-      metric = "receivingYardsAllowedPerGame";
-      break;
-    case "Receptions":
-      metric = "receptionsAllowedPerGame";
-      break;
-    case "Rushing + Receiving Yards":
-      // No defensible combined league metric from these team totals.
-      return { adjustment: 0, comparison: "Combined rushing + receiving: team-wide defensive totals are context only; no ranking adjustment." };
+  // A combined prop requires both positional rushing and receiving evidence.
+  const metrics: PositionMetric[] = metric
+    ? [metric]
+    : ["rushingYardsAllowedPerGame", "receivingYardsAllowedPerGame"];
+  const opponent = metrics.reduce((sum, key) => sum + matchup[key], 0);
+  const league = metrics.reduce((sum, key) => sum + matchup.leagueAverage[key], 0);
+  if (!Number.isFinite(opponent) || !Number.isFinite(league) || league <= 0) {
+    return { adjustment: 0, comparison: "Position-specific defensive comparison unavailable." };
   }
-
-  const league = baseline[metric];
-  const opponent = matchup[metric];
-  if (!Number.isFinite(opponent) || league <= 0) {
-    return { adjustment: 0, comparison: "Defensive comparison unavailable." };
-  }
-
-  // More yards/receptions allowed than league average helps Over, hurts Under.
-  // Cap influence so a four-game team sample cannot dominate player evidence.
   const relative = (opponent - league) / league;
   const directional = side === "Over" ? relative : -relative;
-  const adjustment = Math.max(
-    -maxAdjustment,
-    Math.min(maxAdjustment, directional * 0.2)
-  );
+  // Small capped adjustment, NOT a calibrated probability.
+  const maxAdjustment = prop === "Rushing + Receiving Yards" ? 0.025 : 0.05;
+  const adjustment = Math.max(-maxAdjustment, Math.min(maxAdjustment, directional * 0.2));
+  const metricLabel = prop === "Rushing + Receiving Yards"
+    ? "combined rushing + receiving yards"
+    : prop.toLowerCase();
+  const ranking = metric
+    ? `; rank ${matchup.mostAllowedRank[metric]} of ${matchup.teamsRanked} (1 = most allowed)`
+    : "; combined rank not calculated";
+  const direction = opponent > league ? "above" : opponent < league ? "below" : "equal to";
+  const relevantGames = matchup.recentGames.slice(0, 5);
+  const individualGameHits = relevantGames.filter((game) =>
+    game.individualPlayers.some((player) => {
+      const value = prop === "Passing Yards" ? player.passingYards :
+        prop === "Rushing Yards" ? player.rushingYards :
+        prop === "Receiving Yards" ? player.receivingYards :
+        prop === "Receptions" ? player.receptions :
+        player.rushingYards + player.receivingYards;
+      return side === "Over" ? value > line : value < line;
+    })
+  ).length;
   return {
     adjustment: Number(adjustment.toFixed(4)),
-    comparison:
-      `${round(opponent)} opponent vs ${round(league)} league-average ` +
-      `${metric.replace(/([A-Z])/g, " $1").toLowerCase()} ` +
-      `per game (${matchup.gamesPlayed} opponent games); ` +
-      `small descriptive ranking adjustment ${adjustment >= 0 ? "+" : ""}${round(adjustment * 100)} points, not a player projection.`,
+    comparison: `${matchup.position}-only opponent allowance: ${round(opponent)} ${metricLabel} per game ` +
+      `vs league ${round(league)} (${direction} league average${ranking}); ` +
+      `last ${relevantGames.length} recorded opponent games: ${individualGameHits} featured at least one ` +
+      `${matchup.position} player ${side.toLowerCase()} ${line} ${metricLabel}. ` +
+      `Group allowance is shared across players and does not predict one player's result. ` +
+      `Ranking adjustment ${adjustment >= 0 ? "+" : ""}${round(adjustment * 100)} points is descriptive, not win probability.`,
   };
 }
 
@@ -1021,9 +1002,11 @@ async function generateAnalysis() {
   ]);
 
   const defense = defenseResult.data;
-  const defenseBaseline = defense
-    ? buildLeagueDefenseBaseline(defense.teams)
-    : null;
+  const defenseBaselineAvailable = Boolean(defense && Object.values(defense.teams).some(
+    (team) => Object.values(team.byPosition ?? {}).some(
+      (position) => position && position.teamsRanked >= 24
+    )
+  ));
 
   if (
     snapshot.eventsRequested > 0 &&
@@ -1197,9 +1180,15 @@ async function generateAnalysis() {
         ? awayAbbr
         : homeAbbr;
 
+    const playerPosition = getPosition(recent[0]?.position);
+    if (!playerPosition) continue;
+
     const defensiveMatchup = opponentAbbr
       ? defense?.teams[opponentAbbr] ?? null
       : null;
+
+    const positionDefensiveMatchup =
+      defensiveMatchup?.byPosition?.[playerPosition] ?? null;
 
     const opponentTeam = opponentAbbr
       ? TEAM_NAMES[opponentAbbr] ?? opponentAbbr
@@ -1212,29 +1201,19 @@ async function generateAnalysis() {
       teamMatch.team
     );
 
-    if (defensiveMatchup) {
+    if (positionDefensiveMatchup) {
       evidenceNotes.push(
-        `${opponentTeam} historical defense through week ` +
-          `${defensiveMatchup.latestWeek} ` +
-          `(${defensiveMatchup.gamesPlayed} games): ` +
-          `${defensiveMatchup.passingYardsAllowedPerGame} ` +
-          `passing yards, ` +
-          `${defensiveMatchup.rushingYardsAllowedPerGame} ` +
-          `rushing yards, ` +
-          `${defensiveMatchup.receivingYardsAllowedPerGame} ` +
-          `receiving yards, and ` +
-          `${defensiveMatchup.receptionsAllowedPerGame} ` +
-          `receptions allowed per game, derived from ` +
-          `nflverse weekly player statistics. ` +
-          `These are team totals, not position-specific ` +
-          `matchups or projected player outcomes.`
+        `${opponentTeam} defense against ${playerPosition}s through week ` +
+        `${positionDefensiveMatchup.latestWeek} (${positionDefensiveMatchup.gamesPlayed} games): ` +
+        `${positionDefensiveMatchup.passingYardsAllowedPerGame} passing yards, ` +
+        `${positionDefensiveMatchup.rushingYardsAllowedPerGame} rushing yards, ` +
+        `${positionDefensiveMatchup.receivingYardsAllowedPerGame} receiving yards, ` +
+        `${positionDefensiveMatchup.receptionsAllowedPerGame} receptions, ` +
+        `${positionDefensiveMatchup.targetsAllowedPerGame} targets per game ` +
+        `to ALL opposing ${playerPosition}s combined. These are position-group totals, not individual projections.`
       );
     } else {
-      evidenceNotes.push(
-        `Opponent defensive statistics for ` +
-          `${opponentTeam} could not be verified. ` +
-          `Do not infer matchup difficulty.`
-      );
+      evidenceNotes.push(`Position-specific defensive data for ${opponentTeam} vs ${playerPosition}s unavailable; do not infer matchup strength.`);
     }
 
     for (const side of ["Over", "Under"] as const) {
@@ -1266,11 +1245,10 @@ async function generateAnalysis() {
       ].join("-");
 
       const defensiveContext = defensiveContextForCandidate(
-        defensiveMatchup,
-        defenseBaseline,
+        positionDefensiveMatchup,
         main.propType,
         side,
-        recent[0]?.position ?? null
+        main.line
       );
 
       candidates.push({
@@ -1312,6 +1290,8 @@ async function generateAnalysis() {
         marketVolume: 0,
         evidenceNotes,
         defensiveMatchup,
+        playerPosition,
+        positionDefensiveMatchup,
         opponentTeam,
         defensiveRankingAdjustment: defensiveContext.adjustment,
         defensiveComparison: defensiveContext.comparison,
@@ -1391,18 +1371,15 @@ async function generateAnalysis() {
     candidatesReviewed: selected.length,
     candidatesByPropType,
     defensiveDataAvailable: Boolean(defense),
-    defensiveLeagueBaselineAvailable: Boolean(defenseBaseline),
-    defensiveLeagueBaseline: defenseBaseline
-      ? Object.fromEntries(
-          Object.entries(defenseBaseline).map(([key, value]) => [key, round(value)])
-        )
-      : null,
-    rankingVersion: 8,
+    defensiveLeagueBaselineAvailable: defenseBaselineAvailable,
+    defensiveLeagueBaseline: null,
+    defensivePositionSpecificEnabled: true,
+    rankingVersion: 9,
     rankingDescription:
-      "Historical player evidence plus capped opponent-vs-league defensive context; not a calibrated probability or expected-value model.",
+      "Historical player evidence plus capped position-specific opponent-vs-league defensive context; not a calibrated probability or expected-value model.",
     defensiveDataWarning: defenseResult.error || null,
     defensiveMatchupsVerified: selected.filter(
-      (candidate) => candidate.defensiveMatchup !== null
+      (candidate) => candidate.positionDefensiveMatchup !== null
     ).length,
   };
 
@@ -1446,8 +1423,9 @@ Candidates include:
 - Available alternate lines
 - Scheduled game teams and time
 - Evidence limitations
-- Historical opponent defensive team totals when available
-- Opponent-versus-league comparison and capped ranking adjustment when available
+- Opponent defense against the player's exact position (QB/RB/WR/TE)
+- Position-specific league average, rank and recent opposing-player performances
+- Capped position-specific ranking adjustment when supported
 
 RULES:
 
@@ -1486,16 +1464,20 @@ RULES:
 
 13. Do not invent alternate lines or prices.
 
- 14. Use supplied defensive team totals only when
-     defensiveMatchup is non-null. These are
-     historical per-game team totals, NOT defensive
-     rankings, position-specific allowances, or a
-     player projection. Never call an opponent an
-     easy or hard matchup without comparative data.
-     Even with a comparison, describe it as a team-wide
-     historical tendency, not a player-specific advantage.
-     Quarterback rushing and combined rushing/receiving
-     team totals do not justify strong matchup conclusions.
+ 14. Use ONLY positionDefensiveMatchup and defensiveComparison for matchup discussion.
+     Never use overall team passing, rushing, or receiving yards to characterize
+     an RB, WR, TE, or QB prop. For example, RB receiving yards must be
+     compared with receiving yards allowed to RBs, not total receiving yards.
+     State the position, metric, opponent allowance per game, league average,
+     rank and sample size when provided. Rank 1 means MOST allowed, not best defense.
+     If opponent allowance is BELOW league average, it is generally tougher
+     for an OVER, not favorable. If ABOVE average, it may be more favorable
+     for an OVER, but never guarantees the outcome. Reverse for UNDERS.
+     Position-group totals are SHARED among multiple players: never imply
+     a single player receives the whole group allowance.
+     If referencing recentGames, distinguish group totals from individual
+     performances. Never invent a positional hit count or ranking.
+     If positionDefensiveMatchup is null, say positional matchup is unverified.
 
  15. Explain missing injury, matchup, and
      opportunity information in the risks.
@@ -1558,7 +1540,7 @@ Allowed verdicts:
             content: JSON.stringify({
               season: nfl.season,
               latestWeek: nfl.latestWeek,
-              candidates: selected,
+              candidates: selected.map(({ defensiveMatchup, ...candidate }) => candidate),
             }),
           },
         ],
@@ -1771,21 +1753,21 @@ Allowed verdicts:
       "recorded nflverse team, not live roster status. " +
       "This is not a validated forecast, expected-value " +
       "calculation, or guarantee of betting outcomes. " +
-      "Historical opponent defensive team totals and capped " +
+      "Historical position-specific defensive group totals and capped " +
       "league-relative ranking adjustments are included when available. " +
-      "These are not position-specific or predictive. " +
+      "These are not individual-player projections or predictive. " +
       "Injuries and current defensive personnel remain unverified. " +
       "Odds and availability may change.",
   };
 }
 
-// Version 8 adds cautious league-relative defensive ranking and wider coverage.
+// Version 9 adds position-specific opponent defense and league-relative ranking.
 const getCachedAnalysis = unstable_cache(
   generateAnalysis,
-  ["propedge-ai-analysis-v8-league-relative-defense"],
+  ["propedge-ai-analysis-v9-position-specific-defense"],
   {
     revalidate: CACHE_SECONDS,
-    tags: ["propedge-ai-analysis-v8"],
+    tags: ["propedge-ai-analysis-v9"],
   }
 );
 
@@ -1942,8 +1924,9 @@ export async function POST(request: NextRequest) {
         cacheDurationHours: 6,
         sportsbookGamesPerAnalysis:
           MAX_GAMES_TO_ANALYZE,
-        evidenceFilterVersion: 8,
+        evidenceFilterVersion: 9,
         leagueRelativeDefenseRankingEnabled: true,
+        positionSpecificDefenseEnabled: true,
         defensiveContextEnabled: true,
         teamMatchingEnabled: true,
       });
