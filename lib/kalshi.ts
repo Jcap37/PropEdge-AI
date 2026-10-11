@@ -1,117 +1,56 @@
+// Reuse the same Kalshi market discovery and parsing logic as /api/kalshi.
+// This keeps the market explorer, research API, and AI analysis in sync.
+import { GET as getExpandedKalshiResponse } from "../app/api/kalshi/route";
 
-const BASE_URL =
-  "https://api.elections.kalshi.com/trade-api/v2";
-
-const SERIES_TICKER = "KXNFLPASSYDS";
-
-type KalshiMarket = {
+export type KalshiResearchMarket = {
+  id: string;
   ticker: string;
-  event_ticker?: string;
+  eventTicker: string | null;
   title: string;
-  yes_bid_dollars?: string;
-  yes_ask_dollars?: string;
-  last_price_dollars?: string;
-  volume_fp?: string;
-  occurrence_datetime?: string;
-  close_time?: string;
+  question: string;
+  player: string;
+  sport: string;
+  propType: string;
+  line: number | null;
+  yesBid: string | null;
+  yesAsk: string | null;
+  lastPrice: string | null;
+  volume: number;
+  gameTime: string | null;
+  closeTime: string | null;
 };
 
-type MarketsResponse = {
-  markets?: KalshiMarket[];
-  cursor?: string;
+type ExpandedKalshiResponse = {
+  success: boolean;
+  source?: string;
+  sport?: string;
+  count?: number;
+  markets?: KalshiResearchMarket[];
+  byPropType?: Record<string, number>;
+  seriesTickers?: string[];
+  warnings?: string[];
+  updatedAt?: string;
+  error?: string;
 };
 
 export async function getKalshiMarkets() {
-  const allMarkets: KalshiMarket[] = [];
-  let cursor = "";
+  const response = await getExpandedKalshiResponse();
+  const data = (await response.json()) as ExpandedKalshiResponse;
 
-  for (let page = 0; page < 3; page++) {
-    const url = new URL(`${BASE_URL}/markets`);
-
-    url.searchParams.set("limit", "100");
-    url.searchParams.set("status", "open");
-    url.searchParams.set(
-      "series_ticker",
-      SERIES_TICKER
-    );
-
-    if (cursor) {
-      url.searchParams.set("cursor", cursor);
-    }
-
-    const response = await fetch(url.toString(), {
-      cache: "no-store",
-    });
-
-    if (!response.ok) {
-      throw new Error(
-        `Kalshi returned HTTP ${response.status}`
-      );
-    }
-
-    const data =
-      (await response.json()) as MarketsResponse;
-
-    allMarkets.push(...(data.markets ?? []));
-    cursor = data.cursor ?? "";
-
-    if (!cursor) break;
+  if (!response.ok || !data.success || !Array.isArray(data.markets)) {
+    throw new Error(data.error ?? "Unable to load expanded Kalshi markets.");
   }
 
-  const markets = allMarkets
-    .filter(
-      (market) =>
-        market.ticker.startsWith(
-          `${SERIES_TICKER}-`
-        ) &&
-        /^.+:\s*\d+\+\s*passing yards$/i.test(
-          market.title
-        )
-    )
-    .map((market) => {
-      const match = market.title.match(
-        /^(.+?):\s*(\d+)\+\s*passing yards$/i
-      );
-
-      return {
-        id: market.ticker,
-        ticker: market.ticker,
-        eventTicker:
-          market.event_ticker ?? null,
-        title: market.title,
-        question: market.title,
-        player: match?.[1] ?? "",
-        sport: "NFL",
-        propType: "Passing Yards",
-        line: match ? Number(match[2]) : null,
-        yesBid:
-          market.yes_bid_dollars ?? null,
-        yesAsk:
-          market.yes_ask_dollars ?? null,
-        lastPrice:
-          market.last_price_dollars ?? null,
-        volume: Number(
-          market.volume_fp ?? 0
-        ),
-        gameTime:
-          market.occurrence_datetime ?? null,
-        closeTime:
-          market.close_time ?? null,
-      };
-    });
-
-  markets.sort(
-    (a, b) => b.volume - a.volume
-  );
-
   return {
-    success: true,
+    success: true as const,
     source: "Kalshi",
     sport: "NFL",
-    propType: "Passing Yards",
-    seriesTicker: SERIES_TICKER,
-    count: markets.length,
-    markets,
-    updatedAt: new Date().toISOString(),
+    propType: "Multiple",
+    count: data.markets.length,
+    markets: data.markets,
+    byPropType: data.byPropType ?? {},
+    seriesTickers: data.seriesTickers ?? [],
+    warnings: data.warnings ?? [],
+    updatedAt: data.updatedAt ?? new Date().toISOString(),
   };
 }
