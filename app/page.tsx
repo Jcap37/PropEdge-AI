@@ -37,6 +37,30 @@ type ApiResponse = {
   error?: string;
 };
 
+type Recommendation = {
+  ticker: string;
+  player: string;
+  propType: string;
+  line: number;
+  gameTime?: string | null;
+  recentPassingYards: number[];
+  sampleSize: number;
+  averagePassingYards: number;
+  historicalHits: number;
+  historicalHitRate: number;
+  differenceFromLine: number;
+  verdict: "worth_researching" | "insufficient_evidence";
+  reason: string;
+  risks: string;
+};
+
+type AnalysisResponse = {
+  success: boolean;
+  recommendations?: Recommendation[];
+  updatedAt?: string;
+  error?: string;
+};
+
 type Position = "All" | "QB" | "RB" | "WR/TE" | "Kicker";
 
 const positions: Position[] = [
@@ -128,6 +152,38 @@ export default function Home() {
   const [position, setPosition] = useState<Position>("All");
   const [showAll, setShowAll] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
+  const [analysisLoading, setAnalysisLoading] = useState(false);
+  const [analysisError, setAnalysisError] = useState("");
+  const [analysisUpdatedAt, setAnalysisUpdatedAt] = useState("");
+  const [analysisAttempted, setAnalysisAttempted] = useState(false);
+
+  const generateResearch = useCallback(async () => {
+    if (analysisLoading) return;
+    setAnalysisLoading(true);
+    setAnalysisError("");
+    setAnalysisAttempted(true);
+
+    try {
+      const response = await fetch("/api/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "analyze" }),
+      });
+      const data = (await response.json()) as AnalysisResponse;
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || "Unable to generate research");
+      }
+      setRecommendations(data.recommendations || []);
+      setAnalysisUpdatedAt(data.updatedAt || "");
+    } catch (err) {
+      setAnalysisError(
+        err instanceof Error ? err.message : "Unable to generate research"
+      );
+    } finally {
+      setAnalysisLoading(false);
+    }
+  }, [analysisLoading]);
 
   const loadMarkets = useCallback(async () => {
     setLoading(true);
@@ -216,56 +272,134 @@ export default function Home() {
         </header>
 
         <section className="mb-10">
-          <div className="mb-5 flex flex-wrap items-center gap-3">
-            <h2 className="flex items-center gap-2 text-2xl font-bold">
-              <Sparkles size={22} />
-              Top AI Player Props
-            </h2>
-            <span className="rounded-full bg-[#222] px-3 py-1 text-xs text-[#aaa]">
-              Research engine coming soon
-            </span>
+          <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center gap-3">
+              <h2 className="flex items-center gap-2 text-2xl font-bold">
+                <Sparkles size={22} />
+                Top AI Player Props
+              </h2>
+              <span className="rounded-full bg-[#222] px-3 py-1 text-xs text-[#aaa]">
+                Research preview
+              </span>
+            </div>
+            <button
+              onClick={() => void generateResearch()}
+              disabled={analysisLoading}
+              className="flex items-center gap-2 rounded-lg border border-[#444] bg-white px-4 py-2 text-sm font-semibold text-black hover:bg-[#ddd] disabled:opacity-50"
+            >
+              <BrainCircuit size={16} />
+              {analysisLoading ? "Analyzing..." : "Generate AI Research"}
+            </button>
           </div>
 
-          <div className="rounded-2xl border border-[#303030] bg-[#111] p-6 md:p-8">
-            <div className="mb-4 flex items-center gap-2 text-sm text-[#aaa]">
-              <BrainCircuit size={18} />
-              AI Recommendations
+          <p className="mb-4 text-sm leading-6 text-[#999]">
+            Experimental analysis of historical NFL passing-yard results and
+            Kalshi thresholds. Historical hit rates are not predicted win
+            probabilities. Matchups, injuries, and expected value are not verified.
+          </p>
+
+          {analysisError && (
+            <div className="mb-4 flex items-center gap-2 rounded-xl border border-red-900 bg-[#1b1010] p-4 text-sm text-red-300">
+              <ShieldAlert size={18} />
+              {analysisError}
             </div>
+          )}
 
-            <h3 className="mb-3 text-xl font-semibold">
-              Evidence-backed player prop analysis
-            </h3>
+          {analysisLoading && (
+            <div className="rounded-2xl border border-[#303030] bg-[#111] p-8 text-center text-sm text-[#aaa]">
+              <RefreshCw size={22} className="mx-auto mb-3 animate-spin" />
+              Reviewing verified research and generating explanations...
+            </div>
+          )}
 
-            <p className="max-w-3xl text-sm leading-7 text-[#aaa]">
-              This section will feature the agent&apos;s top
-              recommendations, with detailed write-ups
-              covering recent performance, workload,
-              defensive matchups, injuries, game script,
-              and potential risks.
-            </p>
+          {!analysisLoading && recommendations.length === 0 && (
+            <div className="rounded-2xl border border-[#303030] bg-[#111] p-6 md:p-8">
+              <div className="mb-3 flex items-center gap-2 text-sm text-[#aaa]">
+                <BrainCircuit size={18} />
+                AI Recommendations
+              </div>
+              <h3 className="mb-3 text-xl font-semibold">
+                Evidence-backed player prop research
+              </h3>
+              <p className="text-sm leading-7 text-[#aaa]">
+                {analysisAttempted && !analysisError
+                  ? "No research candidates were returned. Try again when more data is available."
+                  : "Generate an analysis to see up to five NFL passing-yard research candidates, with recent performance, AI explanations, and risks."}
+              </p>
+              <p className="mt-5 border-t border-[#292929] pt-4 text-xs text-[#888]">
+                Each click requests a paid AI analysis. This preview is intended for development testing only.
+              </p>
+            </div>
+          )}
 
-            <div className="mt-6 flex flex-wrap gap-2">
-              {[
-                "Recent form",
-                "Matchup analysis",
-                "Injury report",
-                "Expected value",
-              ].map((tag) => (
-                <span
-                  key={tag}
-                  className="rounded-full bg-[#252525] px-3 py-1 text-xs text-[#ddd]"
+          {!analysisLoading && recommendations.length > 0 && (
+            <div className="grid gap-4 md:grid-cols-2">
+              {recommendations.map((item) => (
+                <article
+                  key={item.ticker}
+                  className="rounded-2xl border border-[#303030] bg-[#111] p-6"
                 >
-                  {tag}
-                </span>
+                  <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <p className="text-xs text-[#888]">NFL · Passing Yards</p>
+                      <h3 className="mt-1 text-xl font-bold">{item.player}</h3>
+                      <p className="mt-1 text-sm text-[#bbb]">
+                        {item.line}+ passing yards
+                      </p>
+                    </div>
+                    <span className="rounded-full border border-[#3a3a3a] bg-[#242424] px-3 py-1 text-xs text-[#ddd]">
+                      {item.verdict === "worth_researching"
+                        ? "Worth researching"
+                        : "Limited evidence"}
+                    </span>
+                  </div>
+
+                  <div className="mb-4 grid grid-cols-3 gap-2">
+                    <div className="rounded-lg bg-[#1e1e1e] p-3">
+                      <p className="text-[11px] text-[#999]">Recent avg.</p>
+                      <p className="mt-1 text-lg font-semibold">{item.averagePassingYards}</p>
+                    </div>
+                    <div className="rounded-lg bg-[#1e1e1e] p-3">
+                      <p className="text-[11px] text-[#999]">Past hits</p>
+                      <p className="mt-1 text-lg font-semibold">
+                        {item.historicalHits}/{item.sampleSize}
+                      </p>
+                    </div>
+                    <div className="rounded-lg bg-[#1e1e1e] p-3">
+                      <p className="text-[11px] text-[#999]">Avg. vs line</p>
+                      <p className="mt-1 text-lg font-semibold">
+                        {item.differenceFromLine > 0 ? "+" : ""}
+                        {item.differenceFromLine}
+                      </p>
+                    </div>
+                  </div>
+
+                  <p className="mb-2 text-xs text-[#888]">
+                    Recent game yards: {item.recentPassingYards.join(" · ")}
+                  </p>
+                  <div className="border-t border-[#292929] pt-4">
+                    <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[#aaa]">
+                      AI analysis
+                    </p>
+                    <p className="text-sm leading-6 text-[#ddd]">{item.reason}</p>
+                    <p className="mb-2 mt-4 text-xs font-semibold uppercase tracking-wide text-[#aaa]">
+                      Risks and uncertainty
+                    </p>
+                    <p className="text-sm leading-6 text-[#aaa]">{item.risks}</p>
+                    <p className="mt-4 text-xs text-[#777]">
+                      Game: {displayDate(item.gameTime)} · Historical sample: {item.sampleSize} games
+                    </p>
+                  </div>
+                </article>
               ))}
             </div>
+          )}
 
-            <p className="mt-6 border-t border-[#292929] pt-4 text-xs text-[#888]">
-              No picks published yet. Recommendations
-              will appear once player statistics and
-              probability modeling are connected.
+          {analysisUpdatedAt && recommendations.length > 0 && (
+            <p className="mt-3 text-xs text-[#888]">
+              Generated {displayDate(analysisUpdatedAt)} · Research only, not a validated betting forecast.
             </p>
-          </div>
+          )}
         </section>
 
         <section className="mb-8 grid gap-3 sm:grid-cols-3">
