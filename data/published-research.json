@@ -1,0 +1,122 @@
+{
+  "success": true,
+  "analysisEnabled": true,
+  "source": {
+    "markets": "Kalshi",
+    "statistics": "nflverse",
+    "analysis": "OpenAI"
+  },
+  "season": 2026,
+  "latestWeek": 5,
+  "candidatesReviewed": 15,
+  "count": 5,
+  "recommendations": [
+    {
+      "ticker": "KXNFLPASSYDS-26OCT11MINNO-NOTSHOUGH6-150",
+      "player": "Tyler Shough",
+      "propType": "Passing Yards",
+      "line": 150,
+      "gameTime": "2026-10-11T20:00:00Z",
+      "recentPassingYards": [
+        286,
+        255,
+        252,
+        410
+      ],
+      "sampleSize": 4,
+      "averagePassingYards": 300.8,
+      "historicalHits": 4,
+      "historicalHitRate": 100,
+      "differenceFromLine": 150.8,
+      "verdict": "worth_researching",
+      "reason": "Shough has consistently surpassed the line with an average of 300.8 passing yards over his last four games, hitting the mark in all four instances.",
+      "risks": "While his recent performance is strong, the sample size is limited to four games, which may not fully capture potential fluctuations in performance."
+    },
+    {
+      "ticker": "KXNFLPASSYDS-26OCT11CINMIA-CINJBURROW9-150",
+      "player": "Joe Burrow",
+      "propType": "Passing Yards",
+      "line": 150,
+      "gameTime": "2026-10-11T20:00:00Z",
+      "recentPassingYards": [
+        428,
+        282,
+        207,
+        254
+      ],
+      "sampleSize": 4,
+      "averagePassingYards": 292.8,
+      "historicalHits": 4,
+      "historicalHitRate": 100,
+      "differenceFromLine": 142.8,
+      "verdict": "worth_researching",
+      "reason": "Burrow has also exceeded this line in all four of his recent games, averaging 292.8 passing yards, indicating a strong trend.",
+      "risks": "Similar to Shough, the limited sample size raises questions about consistency and future performance."
+    },
+    {
+      "ticker": "KXNFLPASSYDS-26OCT11HOUTEN-HOUCSTROUD7-150",
+      "player": "C.J. Stroud",
+      "propType": "Passing Yards",
+      "line": 150,
+      "gameTime": "2026-10-11T20:00:00Z",
+      "recentPassingYards": [
+        347,
+        167,
+        353,
+        274
+      ],
+      "sampleSize": 4,
+      "averagePassingYards": 285.3,
+      "historicalHits": 4,
+      "historicalHitRate": 100,
+      "differenceFromLine": 135.3,
+      "verdict": "worth_researching",
+      "reason": "Stroud has a solid average of 285.3 passing yards in his last four games, hitting the line in all instances.",
+      "risks": "The small sample size may not account for potential changes in game dynamics or defensive matchups."
+    },
+    {
+      "ticker": "KXNFLPASSYDS-26OCT11CHIGB-GBJLOVE10-150",
+      "player": "Jordan Love",
+      "propType": "Passing Yards",
+      "line": 150,
+      "gameTime": "2026-10-11T20:00:00Z",
+      "recentPassingYards": [
+        197,
+        312,
+        145,
+        387
+      ],
+      "sampleSize": 4,
+      "averagePassingYards": 260.3,
+      "historicalHits": 3,
+      "historicalHitRate": 75,
+      "differenceFromLine": 110.3,
+      "verdict": "worth_researching",
+      "reason": "Love has shown the ability to exceed this line with an average of 260.3 passing yards, hitting the mark in 75% of his recent games.",
+      "risks": "His hit rate is lower than others listed, and the variability in performance could affect future outcomes."
+    },
+    {
+      "ticker": "KXNFLPASSYDS-26OCT11DETARI-DETJGOFF16-200",
+      "player": "Jared Goff",
+      "propType": "Passing Yards",
+      "line": 200,
+      "gameTime": "2026-10-11T23:25:00Z",
+      "recentPassingYards": [
+        412,
+        269,
+        327,
+        206
+      ],
+      "sampleSize": 4,
+      "averagePassingYards": 303.5,
+      "historicalHits": 4,
+      "historicalHitRate": 100,
+      "differenceFromLine": 103.5,
+      "verdict": "worth_researching",
+      "reason": "Goff has consistently performed well, averaging 303.5 passing yards and hitting the line in all four recent games.",
+      "risks": "While his performance is strong, the limited sample size may not reflect future game conditions or opponent strength."
+    }
+  ],
+  "updatedAt": "2026-10-11T03:43:20.543Z",
+  "disclaimer": "AI-generated research is not a validated forecast or guarantee of betting outcomes."
+}
