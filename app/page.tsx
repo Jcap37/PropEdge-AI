@@ -45,9 +45,11 @@ type Recommendation = {
   propType: string;
   line: number;
   gameTime?: string | null;
-  recentPassingYards: number[];
+  recentValues?: number[];
+  recentPassingYards?: number[];
   sampleSize: number;
-  averagePassingYards: number;
+  average?: number;
+  averagePassingYards?: number;
   historicalHits: number;
   historicalHitRate: number;
   differenceFromLine: number;
@@ -493,8 +495,8 @@ export default function Home() {
           )}
 
           <p className="mb-4 text-sm leading-6 text-[#999]">
-            Experimental analysis of historical NFL passing-yard
-            results and Kalshi thresholds. Historical hit rates
+            Experimental analysis of historical NFL player statistics
+            and Kalshi thresholds. Historical hit rates
             are not predicted win probabilities. Matchups,
             injuries, and expected value are not verified.
           </p>
@@ -557,7 +559,7 @@ export default function Home() {
                 <p className="text-sm leading-7 text-[#aaa]">
                   {analysisAttempted && !analysisError
                     ? "No research candidates are currently published."
-                    : "Published NFL passing-yard research will appear here automatically when available."}
+                    : "Published NFL player-prop research will appear here automatically when available."}
                 </p>
 
                 <p className="mt-5 border-t border-[#292929] pt-4 text-xs text-[#888]">
@@ -579,7 +581,7 @@ export default function Home() {
                     <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
                       <div>
                         <p className="text-xs text-[#888]">
-                          NFL · Passing Yards
+                          NFL · {item.propType}
                         </p>
 
                         <h3 className="mt-1 text-xl font-bold">
@@ -587,7 +589,7 @@ export default function Home() {
                         </h3>
 
                         <p className="mt-1 text-sm text-[#bbb]">
-                          {item.line}+ passing yards
+                          {item.line}+ {item.propType.toLowerCase()}
                         </p>
                       </div>
 
@@ -604,7 +606,7 @@ export default function Home() {
                           Recent avg.
                         </p>
                         <p className="mt-1 text-lg font-semibold">
-                          {item.averagePassingYards}
+                          {item.average ?? item.averagePassingYards ?? "—"}
                         </p>
                       </div>
 
@@ -630,7 +632,7 @@ export default function Home() {
 
                     <p className="mb-2 text-xs text-[#888]">
                       Recent game yards:{" "}
-                      {item.recentPassingYards.join(" · ")}
+                      {(item.recentValues ?? item.recentPassingYards ?? []).join(" · ") || "Unavailable"}
                     </p>
 
                     <div className="border-t border-[#292929] pt-4">
