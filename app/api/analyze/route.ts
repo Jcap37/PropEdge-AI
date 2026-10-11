@@ -9,27 +9,25 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const CACHE_SECONDS = 6 * 60 * 60;
+const GITHUB_OWNER = "Jcap37";
+const GITHUB_REPO = "PropEdge-AI";
+const GITHUB_BRANCH = "main";
+const PUBLISHED_PATH = "data/published-research.json";
 
 function normalizeName(name: string) {
   return name.toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
 function isAuthorized(request: NextRequest) {
-  const adminSecret = process.env.ANALYZE_ADMIN_SECRET;
-  const providedSecret = request.headers.get("x-admin-secret");
+  const secret = process.env.ANALYZE_ADMIN_SECRET;
+  const provided = request.headers.get("x-admin-secret");
 
-  if (!adminSecret || !providedSecret) {
-    return false;
-  }
+  if (!secret || !provided) return false;
 
-  const expected = Buffer.from(adminSecret, "utf8");
-  const provided = Buffer.from(providedSecret, "utf8");
+  const a = Buffer.from(secret, "utf8");
+  const b = Buffer.from(provided, "utf8");
 
-  if (expected.length !== provided.length) {
-    return false;
-  }
-
-  return timingSafeEqual(expected, provided);
+  return a.length === b.length && timingSafeEqual(a, b);
 }
 
 async function generateAnalysis() {
@@ -307,12 +305,133 @@ const getCachedAnalysis = unstable_cache(
   }
 );
 
+// Save the research to your GitHub repository.
+async function publishToGitHub(
+  analysis: Awaited<ReturnType<typeof generateAnalysis>>
+) {
+  const token = process.env.GITHUB_PUBLISH_TOKEN;
+
+  if (!token) {
+    throw new Error(
+      "GITHUB_PUBLISH_TOKEN is not configured in Vercel."
+    );
+  }
+
+  const url =
+    `https://api.github.com/repos/` +
+    `${GITHUB_OWNER}/${GITHUB_REPO}/contents/${PUBLISHED_PATH}`;
+
+  const headers = {
+    Authorization: `Bearer ${token}`,
+    Accept: "application/vnd.github+json",
+    "X-GitHub-Api-Version": "2022-11-28",
+  };
+
+  // Check whether a published file already exists.
+  const existingResponse = await fetch(
+    `${url}?ref=${encodeURIComponent(GITHUB_BRANCH)}`,
+    {
+      headers,
+      cache: "no-store",
+    }
+  );
+
+  let sha: string | undefined;
+
+  if (existingResponse.status === 200) {
+    const existing: {
+      sha?: string;
+      content?: string;
+      encoding?: string;
+    } = await existingResponse.json();
+
+    if (!existing.sha) {
+      throw new Error(
+        "GitHub returned a file without its SHA."
+      );
+    }
+
+    sha = existing.sha;
+
+    // Avoid unnecessary commits for unchanged research.
+    if (
+      existing.encoding === "base64" &&
+      typeof existing.content === "string"
+    ) {
+      const oldText = Buffer.from(
+        existing.content.replace(/\s/g, ""),
+        "base64"
+      ).toString("utf8");
+
+      try {
+        if (
+          JSON.stringify(JSON.parse(oldText)) ===
+          JSON.stringify(analysis)
+        ) {
+          return {
+            published: true,
+            changed: false,
+          };
+        }
+      } catch {
+        // Replace invalid old JSON with valid research.
+      }
+    }
+  } else if (existingResponse.status !== 404) {
+    console.error(
+      "GitHub read failed:",
+      existingResponse.status
+    );
+
+    throw new Error(
+      `GitHub could not read the published file ` +
+      `(HTTP ${existingResponse.status}).`
+    );
+  }
+
+  const content = Buffer.from(
+    JSON.stringify(analysis, null, 2) + "\n",
+    "utf8"
+  ).toString("base64");
+
+  const publishResponse = await fetch(url, {
+    method: "PUT",
+    headers: {
+      ...headers,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      message: "Publish PropEdge AI research",
+      content,
+      branch: GITHUB_BRANCH,
+      ...(sha ? { sha } : {}),
+    }),
+    cache: "no-store",
+  });
+
+  if (!publishResponse.ok) {
+    console.error(
+      "GitHub publish failed:",
+      publishResponse.status
+    );
+
+    throw new Error(
+      `GitHub publishing failed ` +
+      `(HTTP ${publishResponse.status}). ` +
+      `Check token permissions and repository access.`
+    );
+  }
+
+  return {
+    published: true,
+    changed: true,
+  };
+}
+
 export async function POST(request: NextRequest) {
   try {
     const origin = request.headers.get("origin");
 
-    // An origin check is an additional browser safeguard,
-    // not a replacement for admin authentication.
     if (origin && origin !== request.nextUrl.origin) {
       return NextResponse.json(
         {
@@ -356,7 +475,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Authentication happens BEFORE any paid AI operation.
+    // Require your password before any AI request.
     if (!isAuthorized(request)) {
       return NextResponse.json(
         {
@@ -377,15 +496,61 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (!process.env.GITHUB_PUBLISH_TOKEN) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "GitHub publishing token is not configured.",
+        },
+        { status: 503 }
+      );
+    }
+
     const analysis = await getCachedAnalysis();
 
-    return NextResponse.json(analysis, {
-      headers: {
-        "Cache-Control": "private, no-store",
+    let publication;
+
+    try {
+      publication = await publishToGitHub(analysis);
+    } catch (error) {
+      console.error(
+        "PropEdge AI publishing error:",
+        error
+      );
+
+      return NextResponse.json(
+        {
+          ...analysis,
+          published: false,
+          publishError:
+            error instanceof Error
+              ? error.message
+              : "Publishing failed.",
+        },
+        {
+          headers: {
+            "Cache-Control": "private, no-store",
+          },
+        }
+      );
+    }
+
+    return NextResponse.json(
+      {
+        ...analysis,
+        ...publication,
       },
-    });
+      {
+        headers: {
+          "Cache-Control": "private, no-store",
+        },
+      }
+    );
   } catch (error) {
-    console.error("PropEdge AI analysis error:", error);
+    console.error(
+      "PropEdge AI analysis error:",
+      error
+    );
 
     return NextResponse.json(
       {
