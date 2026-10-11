@@ -6,6 +6,10 @@ import {
   getNFLStats,
   type NFLPlayerGame,
 } from "../../../lib/nfl-stats";
+import {
+  getNFLDefenseStats,
+  type DefensiveMatchup,
+} from "../../../lib/nfl-defense";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -208,6 +212,8 @@ type Candidate = {
   differenceFromLine: number;
   marketVolume: number;
   evidenceNotes: string[];
+  defensiveMatchup: DefensiveMatchup | null;
+  opponentTeam: string;
   opportunityVerified: boolean;
 };
 
@@ -891,10 +897,24 @@ async function generateAnalysis() {
     );
   }
 
-  const [snapshot, nfl] = await Promise.all([
+  // Defensive data is supplemental: an outage must not be
+  // mistaken for a favorable matchup or break existing research.
+  const [snapshot, nfl, defenseResult] = await Promise.all([
     fetchSportsbookSnapshot(),
     getNFLStats(),
+    getNFLDefenseStats().then(
+      (data) => ({ data, error: "" }),
+      (error: unknown) => ({
+        data: null,
+        error:
+          error instanceof Error
+            ? error.message
+            : "Defensive data unavailable.",
+      })
+    ),
   ]);
+
+  const defense = defenseResult.data;
 
   if (
     snapshot.eventsRequested > 0 &&
@@ -1061,12 +1081,52 @@ async function generateAnalysis() {
       })
     );
 
+    const homeAbbr = normalizeTeam(main.homeTeam);
+    const awayAbbr = normalizeTeam(main.awayTeam);
+    const opponentAbbr =
+      teamMatch.abbreviation === homeAbbr
+        ? awayAbbr
+        : homeAbbr;
+
+    const defensiveMatchup = opponentAbbr
+      ? defense?.teams[opponentAbbr] ?? null
+      : null;
+
+    const opponentTeam = opponentAbbr
+      ? TEAM_NAMES[opponentAbbr] ?? opponentAbbr
+      : "Unknown opponent";
+
     const evidenceNotes = buildEvidenceNotes(
       recent,
       main.propType,
       stats,
       teamMatch.team
     );
+
+    if (defensiveMatchup) {
+      evidenceNotes.push(
+        `${opponentTeam} historical defense through week ` +
+          `${defensiveMatchup.latestWeek} ` +
+          `(${defensiveMatchup.gamesPlayed} games): ` +
+          `${defensiveMatchup.passingYardsAllowedPerGame} ` +
+          `passing yards, ` +
+          `${defensiveMatchup.rushingYardsAllowedPerGame} ` +
+          `rushing yards, ` +
+          `${defensiveMatchup.receivingYardsAllowedPerGame} ` +
+          `receiving yards, and ` +
+          `${defensiveMatchup.receptionsAllowedPerGame} ` +
+          `receptions allowed per game, derived from ` +
+          `nflverse weekly player statistics. ` +
+          `These are team totals, not position-specific ` +
+          `matchups or projected player outcomes.`
+      );
+    } else {
+      evidenceNotes.push(
+        `Opponent defensive statistics for ` +
+          `${opponentTeam} could not be verified. ` +
+          `Do not infer matchup difficulty.`
+      );
+    }
 
     for (const side of ["Over", "Under"] as const) {
       const odds = getOddsForSide(main, side);
@@ -1134,6 +1194,8 @@ async function generateAnalysis() {
         ),
         marketVolume: 0,
         evidenceNotes,
+        defensiveMatchup,
+        opponentTeam,
         opportunityVerified:
           main.propType === "Receiving Yards" ||
           main.propType === "Receptions",
@@ -1209,6 +1271,11 @@ async function generateAnalysis() {
     excludedForAmbiguousPlayer,
     candidatesReviewed: selected.length,
     candidatesByPropType,
+    defensiveDataAvailable: Boolean(defense),
+    defensiveDataWarning: defenseResult.error || null,
+    defensiveMatchupsVerified: selected.filter(
+      (candidate) => candidate.defensiveMatchup !== null
+    ).length,
   };
 
   if (selected.length === 0) {
@@ -1251,6 +1318,7 @@ Candidates include:
 - Available alternate lines
 - Scheduled game teams and time
 - Evidence limitations
+- Historical opponent defensive team totals when available
 
 RULES:
 
@@ -1289,19 +1357,26 @@ RULES:
 
 13. Do not invent alternate lines or prices.
 
-14. Explain missing injury, matchup, and
-    opportunity information in the risks.
+ 14. Use supplied defensive team totals only when
+     defensiveMatchup is non-null. These are
+     historical per-game team totals, NOT defensive
+     rankings, position-specific allowances, or a
+     player projection. Never call an opponent an
+     easy or hard matchup without comparative data.
 
-15. Use "worth_researching" only when the
+ 15. Explain missing injury, matchup, and
+     opportunity information in the risks.
+
+16. Use "worth_researching" only when the
     evidence supports further investigation.
 
-16. Use "insufficient_evidence" when the data
+17. Use "insufficient_evidence" when the data
     is weak, contradictory, or incomplete.
 
-17. Aim for 100-160 words in the reason
+18. Aim for 100-160 words in the reason
     when enough information is available.
 
-18. Return one evaluation per candidate.
+ 19. Return one evaluation per candidate.
 
 Return valid JSON only:
 
@@ -1558,19 +1633,21 @@ Allowed verdicts:
       "recorded nflverse team, not live roster status. " +
       "This is not a validated forecast, expected-value " +
       "calculation, or guarantee of betting outcomes. " +
-      "Injuries and defensive matchups remain unverified. " +
+      "Historical opponent defensive team totals are included " +
+      "when available but are not position-specific or predictive. " +
+      "Injuries and current defensive personnel remain unverified. " +
       "Odds and availability may change.",
   };
 }
 
-// Version 6 forces a fresh analysis instead of
-// reusing the earlier cached recommendations.
+// Version 7 includes historical defensive context.
+// A new cache key avoids reusing the v6 report.
 const getCachedAnalysis = unstable_cache(
   generateAnalysis,
-  ["propedge-ai-analysis-v6-team-matching"],
+  ["propedge-ai-analysis-v7-defensive-context"],
   {
     revalidate: CACHE_SECONDS,
-    tags: ["propedge-ai-analysis-v6"],
+    tags: ["propedge-ai-analysis-v7"],
   }
 );
 
@@ -1667,7 +1744,7 @@ async function publishToGitHub(
     },
     body: JSON.stringify({
       message:
-        "Publish team-verified PropEdge AI research",
+        "Publish defensive-context PropEdge AI research",
       content,
       branch: GITHUB_BRANCH,
       ...(sha ? { sha } : {}),
@@ -1727,7 +1804,8 @@ export async function POST(request: NextRequest) {
         cacheDurationHours: 6,
         sportsbookGamesPerAnalysis:
           MAX_GAMES_TO_ANALYZE,
-        evidenceFilterVersion: 6,
+        evidenceFilterVersion: 7,
+        defensiveContextEnabled: true,
         teamMatchingEnabled: true,
       });
     }
