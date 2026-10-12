@@ -252,6 +252,26 @@ async function fetchPublishedReport(): Promise<AnalysisResponse> {
   return report;
 }
 
+// Matchups are derived from the already-published research. No extra API requests.
+function researchGameKey(item: Recommendation): string {
+  const away = (item.awayTeam ?? "").trim().toLowerCase();
+  const home = (item.homeTeam ?? "").trim().toLowerCase();
+  if (!away || !home) return "";
+  const date = item.gameTime && !Number.isNaN(new Date(item.gameTime).getTime())
+    ? new Intl.DateTimeFormat("en-CA", {
+        timeZone: "America/Chicago", year: "numeric", month: "2-digit", day: "2-digit",
+      }).format(new Date(item.gameTime))
+    : "unknown";
+  return `${away}|${home}|${date}`;
+}
+
+function chicagoGameDate(value?: string | null): string {
+  if (!value || Number.isNaN(new Date(value).getTime())) return "";
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Chicago", year: "numeric", month: "2-digit", day: "2-digit",
+  }).format(new Date(value));
+}
+
 function SportsbookComparison({
   item,
 }: {
@@ -733,6 +753,9 @@ export default function Home() {
   const [visibleCount, setVisibleCount] = useState(25);
   const [expanded, setExpanded] = useState<string | null>(null);
 
+  const [selectedResearchGame, setSelectedResearchGame] = useState("all");
+  const [todayChicago, setTodayChicago] = useState("");
+
   const [recommendations, setRecommendations] = useState<
     Recommendation[]
   >([]);
@@ -925,6 +948,39 @@ export default function Home() {
     void loadPublishedResearch();
   }, [loadMarkets, loadPublishedResearch]);
 
+  useEffect(() => {
+    setTodayChicago(chicagoGameDate(new Date().toISOString()));
+  }, []);
+
+  const researchGames = useMemo(() => {
+    const found = new Map<string, { key: string; label: string; time: string; date: string }>();
+    for (const item of [...highConfidenceRecommendations, ...recommendations]) {
+      const key = researchGameKey(item);
+      if (!key || found.has(key)) continue;
+      found.set(key, {
+        key,
+        label: `${item.awayTeam} @ ${item.homeTeam}`,
+        time: item.gameTime ?? "",
+        date: chicagoGameDate(item.gameTime),
+      });
+    }
+    return [...found.values()].sort((a, b) => {
+      const ta = Date.parse(a.time), tb = Date.parse(b.time);
+      return (Number.isFinite(ta) ? ta : Infinity) - (Number.isFinite(tb) ? tb : Infinity);
+    });
+  }, [highConfidenceRecommendations, recommendations]);
+
+  const matchesResearchGame = (item: Recommendation) => {
+    if (selectedResearchGame === "all") return true;
+    if (selectedResearchGame === "today") {
+      return Boolean(todayChicago && chicagoGameDate(item.gameTime) === todayChicago);
+    }
+    return researchGameKey(item) === selectedResearchGame;
+  };
+
+  const visibleHighConfidence = highConfidenceRecommendations.filter(matchesResearchGame);
+  const visibleRecommendations = recommendations.filter(matchesResearchGame);
+
   const propTypes = useMemo(
     () => [
       "All props",
@@ -999,6 +1055,51 @@ export default function Home() {
           </button>
         </header>
 
+        <section className="mb-7 rounded-2xl border border-[#303030] bg-[#111] p-5" aria-label="Research game filter">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h2 className="text-lg font-bold">Game Research</h2>
+              <p className="mt-1 text-xs leading-5 text-[#999]">
+                Filter both research sections by matchup. Uses your existing published report—no new analysis or sportsbook API calls.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setSelectedResearchGame("today")}
+              className={`rounded-lg border px-3 py-2 text-xs font-semibold ${
+                selectedResearchGame === "today"
+                  ? "border-emerald-600 bg-[#193024] text-emerald-300"
+                  : "border-[#444] bg-[#202020] text-[#ddd] hover:bg-[#303030]"
+              }`}
+            >
+              Today's games
+            </button>
+          </div>
+          <label htmlFor="research-game" className="mb-2 block text-xs font-semibold uppercase tracking-wide text-[#aaa]">
+            Select a matchup
+          </label>
+          <select
+            id="research-game"
+            value={selectedResearchGame}
+            onChange={(event) => setSelectedResearchGame(event.target.value)}
+            className="w-full rounded-lg border border-[#444] bg-[#191919] px-4 py-3 text-sm text-white outline-none focus:border-[#888]"
+          >
+            <option value="all">All published games</option>
+            <option value="today">Today's games (Central Time)</option>
+            {researchGames.map((game) => (
+              <option key={game.key} value={game.key}>
+                {game.label}{game.time ? ` · ${displayDate(game.time)}` : ""}
+              </option>
+            ))}
+          </select>
+          <p className="mt-3 text-xs text-[#888]">
+            Showing {visibleHighConfidence.length} highest-confidence and {visibleRecommendations.length} regular recommendations.
+            {selectedResearchGame !== "all" && visibleHighConfidence.length + visibleRecommendations.length === 0
+              ? " No recommendations for this selection exist in the published report."
+              : ""}
+          </p>
+        </section>
+
         <section className="mb-10" aria-labelledby="confidence-heading">
           <div className="mb-4 flex flex-wrap items-center gap-3">
             <h2 id="confidence-heading" className="flex items-center gap-2 text-2xl font-bold">
@@ -1019,9 +1120,9 @@ export default function Home() {
               Qualification criteria: {confidenceMethodology}
             </p>
           )}
-          {highConfidenceRecommendations.length > 0 ? (
+          {visibleHighConfidence.length > 0 ? (
             <div className="grid gap-4 md:grid-cols-2">
-              {highConfidenceRecommendations.map((item, index) => (
+              {visibleHighConfidence.map((item, index) => (
                 <RecommendationCard
                   key={`confidence-${item.ticker}-${index}`}
                   item={item}
@@ -1030,7 +1131,7 @@ export default function Home() {
             </div>
           ) : (
             <div className="rounded-2xl border border-[#303030] bg-[#111] p-6">
-              <p className="font-semibold text-white">No qualified picks published yet</p>
+              <p className="font-semibold text-white">No qualified picks for this selection</p>
               <p className="mt-2 text-sm leading-6 text-[#999]">
                 The analyzer must explicitly publish a verified high-confidence shortlist.
                 Existing Top AI Player Props are not automatically promoted.
@@ -1217,14 +1318,22 @@ export default function Home() {
             )}
 
           {!analysisLoading &&
-            recommendations.length > 0 && (
+            visibleRecommendations.length > 0 && (
               <div className="grid gap-4 md:grid-cols-2">
-                {recommendations.map((item) => (
+                {visibleRecommendations.map((item) => (
                   <RecommendationCard
                     key={item.ticker}
                     item={item}
                   />
                 ))}
+              </div>
+            )}
+
+          {!analysisLoading && !publishedLoading &&
+            recommendations.length > 0 && visibleRecommendations.length === 0 && (
+              <div className="rounded-2xl border border-[#303030] bg-[#111] p-6 text-sm text-[#aaa]">
+                No regular recommendations for this matchup in the published report.
+                The analyzer may not have selected any props from this game.
               </div>
             )}
 
