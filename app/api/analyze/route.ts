@@ -224,6 +224,9 @@ type Candidate = {
   defensiveComparison: string;
   opportunityVerified: boolean;
   headToHead: HeadToHeadGame[];
+  longerTermGames: number;
+  longerTermHits: number;
+  longerTermHitRate: number | null;
 };
 
 // Actual player-vs-opponent NFL weekly results, not opposing position averages.
@@ -790,7 +793,10 @@ function verifiedRecommendationReason(candidate: Candidate): string {
         `based on position-group history, not an individual-player forecast.${rankText}`;
     }
   }
-  return lead + headToHeadExplanation(candidate) + " " + matchupText + " " + individualOpponentContext(candidate) + " " + opponentDistributionContext(candidate) +
+  const longerTermText = candidate.longerTermGames > 0
+    ? `Longer-term sample: ${candidate.longerTermHits}/${candidate.longerTermGames} recorded games would have hit today's ${candidate.line} line (available previous/current season data; not historic odds). `
+    : "Longer-term sample unavailable; do not assume historical consistency. ";
+  return lead + longerTermText + headToHeadExplanation(candidate) + " " + matchupText + " " + individualOpponentContext(candidate) + " " + opponentDistributionContext(candidate) +
     " Historical hit rates are not future probabilities; player availability and usage remain unverified.";
 }
 
@@ -808,16 +814,26 @@ function candidateScore(candidate: Candidate): number {
         Math.max(Math.abs(candidate.line), 1)
     );
 
-  const consistency =
-    candidate.recentValues.filter(
-      (value) => value > 0
-    ).length / candidate.sampleSize;
+  // Count actual line hits, not merely games with nonzero production.
+  // Penalize volatile production that depends on one extreme game.
+  const consistency = candidate.recentValues.filter((value) =>
+    historicalHit(value, candidate.line, candidate.side)
+  ).length / candidate.sampleSize;
+  const sorted = [...candidate.recentValues].sort((a, b) => a - b);
+  const median = sorted[Math.floor(sorted.length / 2)] ?? candidate.average;
+  const medianSupports = historicalHit(median, candidate.line, candidate.side);
+  const volatilityPenalty = medianSupports ? 0 : 0.14;
+  const longTermAdjustment = candidate.longerTermGames >= 8 && candidate.longerTermHitRate !== null
+    ? Math.max(-0.12, Math.min(0.08, (candidate.longerTermHitRate / 100 - 0.65) * 0.3))
+    : 0;
 
   return (
     hitRate * 0.45 +
     sampleFactor * 0.2 +
     Math.min(relativeDifference, 1) * 0.2 +
-    consistency * 0.15 +
+    consistency * 0.15 -
+    volatilityPenalty +
+    longTermAdjustment +
     candidate.defensiveRankingAdjustment +
     (opponentDistribution(candidate)?.adjustment ?? 0) +
     headToHeadSignal(candidate).adjustment
@@ -1030,7 +1046,7 @@ function extractSportsbookLines(
   return lines;
 }
 
-async function fetchSportsbookSnapshot(): Promise<OddsSnapshot> {
+async function fetchSportsbookSnapshot(gameId?: string): Promise<OddsSnapshot> {
   const events = await oddsRequest<EventData[]>(
     `/sports/${ODDS_SPORT}/events`
   );
@@ -1051,10 +1067,12 @@ async function fetchSportsbookSnapshot(): Promise<OddsSnapshot> {
         new Date(b.commence_time).getTime()
     );
 
-  const selected = upcoming.slice(
-    0,
-    MAX_GAMES_TO_ANALYZE
-  );
+  const selected = gameId
+    ? upcoming.filter((event) => event.id === gameId)
+    : upcoming.slice(0, MAX_GAMES_TO_ANALYZE);
+  if (gameId && selected.length !== 1) {
+    throw new Error("Selected game is unavailable or has already started. Refresh the game list.");
+  }
 
   const snapshot: OddsSnapshot = {
     lines: [],
@@ -1318,7 +1336,7 @@ function passesEvidenceFilters(
   return true;
 }
 
-async function generateAnalysis() {
+async function generateAnalysis(gameId?: string) {
   const openaiKey = process.env.OPENAI_API_KEY;
 
   if (!openaiKey) {
@@ -1330,7 +1348,7 @@ async function generateAnalysis() {
   // Defensive data is supplemental: an outage must not be
   // mistaken for a favorable matchup or break existing research.
   const [snapshot, nfl, defenseResult] = await Promise.all([
-    fetchSportsbookSnapshot(),
+    fetchSportsbookSnapshot(gameId),
     getNFLStats(),
     getNFLDefenseStats().then(
       (data) => ({ data, error: "" }),
@@ -1589,9 +1607,25 @@ async function generateAnalysis() {
           ? average - main.line
           : main.line - average;
 
-      if (hits < 3 || directionalDifference <= 0) {
+      const sortedStats = [...stats].sort((a, b) => a - b);
+      const median = sortedStats[Math.floor(sortedStats.length / 2)];
+      const minimumHits = stats.length >= 5 ? 4 : 3;
+      if (hits < minimumHits || directionalDifference <= 0 ||
+          !historicalHit(median, main.line, side)) {
         continue;
       }
+
+      // Longer-term consistency is calculated against today's quoted line.
+      // This historical dataset may be incomplete; do not treat missing data as a miss.
+      const longerTerm = (headToHeadByPlayer.get(normalizeName(main.player)) ?? [])
+        .filter((game) => game.season >= nfl.season - 1 &&
+          (game.season < nfl.season || game.week <= nfl.latestWeek))
+        .sort((a, b) => b.season - a.season || b.week - a.week)
+        .slice(0, 16);
+      const longerTermHits = longerTerm.filter((game) =>
+        historicalHit(headToHeadStat(game, main.propType), main.line, side)).length;
+      // Reject a candidate when a meaningful longer sample strongly contradicts a hot recent streak.
+      if (longerTerm.length >= 8 && longerTermHits / longerTerm.length < 0.55) continue;
 
       const ticker = [
         "SPORTSBOOK",
@@ -1655,6 +1689,9 @@ async function generateAnalysis() {
         defensiveRankingAdjustment: defensiveContext.adjustment,
         defensiveComparison: defensiveContext.comparison,
         headToHead,
+        longerTermGames: longerTerm.length,
+        longerTermHits,
+        longerTermHitRate: longerTerm.length ? round(100 * longerTermHits / longerTerm.length) : null,
         opportunityVerified:
           main.propType === "Receiving Yards" ||
           main.propType === "Receptions",
@@ -1711,6 +1748,8 @@ async function generateAnalysis() {
   }
 
   const baseReport = {
+    researchScope: gameId ? "selected_game" : "all_games",
+    selectedGameId: gameId ?? null,
     success: true,
     analysisEnabled: true,
     source: {
@@ -2203,13 +2242,29 @@ async function publishToGitHub(
       ).toString("utf8");
 
       try {
+        const oldReport = JSON.parse(oldText) as typeof analysis;
+        if (analysis.selectedGameId && oldReport && typeof oldReport === "object") {
+          const other = (items: Recommendation[] | undefined) =>
+            (Array.isArray(items) ? items : []).filter((item) => item.eventId !== analysis.selectedGameId);
+          const mergedRegular = [...other(oldReport.recommendations), ...analysis.recommendations];
+          const mergedHigh = [...other(oldReport.highConfidenceRecommendations), ...analysis.highConfidenceRecommendations];
+          analysis = {
+            ...analysis,
+            recommendations: mergedRegular,
+            highConfidenceRecommendations: mergedHigh,
+            count: mergedRegular.length,
+            highConfidenceCount: mergedHigh.length,
+            researchScope: "merged_game_research",
+          };
+        }
         if (
-          JSON.stringify(JSON.parse(oldText)) ===
+          JSON.stringify(oldReport) ===
           JSON.stringify(analysis)
         ) {
           return {
             published: true,
             changed: false,
+            analysis,
           };
         }
       } catch {
@@ -2255,6 +2310,7 @@ async function publishToGitHub(
   return {
     published: true,
     changed: true,
+    analysis,
   };
 }
 
@@ -2372,7 +2428,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const analysis = await getCachedAnalysis();
+    const gameId = typeof body?.gameId === "string" ? body.gameId.trim() : "";
+    if (gameId && !/^[a-zA-Z0-9_-]{6,128}$/.test(gameId)) {
+      return NextResponse.json({ success: false, error: "Invalid game identifier." }, { status: 400 });
+    }
+    const analysis = gameId ? await generateAnalysis(gameId) : await getCachedAnalysis();
 
     try {
       const publication =
@@ -2380,8 +2440,9 @@ export async function POST(request: NextRequest) {
 
       return NextResponse.json(
         {
-          ...analysis,
-          ...publication,
+          ...publication.analysis,
+          published: publication.published,
+          changed: publication.changed,
         },
         {
           headers: {
@@ -2429,5 +2490,25 @@ export async function POST(request: NextRequest) {
       },
       { status: 500 }
     );
+  }
+}
+// Fetches the upcoming NFL schedule only when the administrator requests it.
+// One Odds API events call; no OpenAI request and no per-game prop calls.
+export async function GET(request: NextRequest) {
+  if (!process.env.ANALYZE_ADMIN_SECRET) {
+    return NextResponse.json({ success: false, error: "Admin authentication is not configured." }, { status: 503 });
+  }
+  if (!isAuthorized(request)) {
+    return NextResponse.json({ success: false, error: "Admin authorization required." }, { status: 401 });
+  }
+  try {
+    const events = await oddsRequest<EventData[]>(`/sports/${ODDS_SPORT}/events`);
+    const upcoming = events.filter((event) => Date.parse(event.commence_time) > Date.now())
+      .sort((a, b) => Date.parse(a.commence_time) - Date.parse(b.commence_time));
+    return NextResponse.json({ success: true, games: upcoming.map(({ id, home_team, away_team, commence_time }) =>
+      ({ id, homeTeam: home_team, awayTeam: away_team, gameTime: commence_time })) },
+      { headers: { "Cache-Control": "private, no-store" } });
+  } catch (error) {
+    return NextResponse.json({ success: false, error: error instanceof Error ? error.message : "Could not load games." }, { status: 500 });
   }
 }
