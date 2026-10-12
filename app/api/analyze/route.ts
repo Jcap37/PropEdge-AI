@@ -800,6 +800,39 @@ function verifiedRecommendationReason(candidate: Candidate): string {
     " Historical hit rates are not future probabilities; player availability and usage remain unverified.";
 }
 
+// v12.1: conservative, evidence-only reliability screen. This does not
+// verify snaps, routes, injuries or live depth charts; missing information
+// must never be presented as a verified opportunity.
+function passesReliabilityScreen(candidate: Candidate): boolean {
+  if (candidate.sampleSize < 4 || candidate.recentValues.length < 4) return false;
+  const recentRate = candidate.historicalHits / candidate.sampleSize;
+  if (recentRate < 0.75) return false;
+  // A recent hot streak should not override a materially weaker longer sample.
+  if (candidate.longerTermGames >= 10 &&
+      (candidate.longerTermHitRate === null || candidate.longerTermHitRate < 65)) return false;
+  if (candidate.longerTermGames >= 8 && candidate.longerTermGames < 10 &&
+      (candidate.longerTermHitRate === null || candidate.longerTermHitRate < 62.5)) return false;
+  const ordered = [...candidate.recentValues].sort((a,b) => a-b);
+  const middle = (ordered[1] + ordered[2]) / 2;
+  if (!historicalHit(middle, candidate.line, candidate.side)) return false;
+  // Do not allow one anomalous performance to carry the mean.
+  const trimmed = ordered.slice(1, -1);
+  const trimmedMean = trimmed.reduce((sum, value) => sum + value, 0) / trimmed.length;
+  if (!historicalHit(trimmedMean, candidate.line, candidate.side)) return false;
+  if (candidate.propType === "Receiving Yards" || candidate.propType === "Receptions") {
+    const targets = candidate.gameDetails.map(game => game.targets);
+    if (targets.some(value => value === null)) return false;
+    const counts = targets as number[];
+    // At least three targets in three of four recent games, and no zero-target game.
+    if (counts.filter(value => value >= 3).length < 3 || counts.some(value => value === 0)) return false;
+  }
+  // A highly adverse position matchup is not suitable for the shortlist.
+  if (stronglyUnfavorableDefense(candidate)) return false;
+  if (opponentDistribution(candidate)?.conflicting) return false;
+  if (headToHeadSignal(candidate).stronglyContradictory) return false;
+  return true;
+}
+
 function candidateScore(candidate: Candidate): number {
   const hitRate =
     candidate.historicalHitRate / 100;
@@ -845,6 +878,7 @@ function candidateScore(candidate: Candidate): number {
 const MAX_HIGH_CONFIDENCE_RECOMMENDATIONS = 3;
 const CONFIDENCE_METHODOLOGY =
   "At least 4 recorded games, 100% historical hits at the quoted main line, " +
+  "plus v12.1 longer-term consistency and target-opportunity screens, " +
   "a directional average at least 15% beyond that line, verified position-specific " +
   "defense that is not materially unfavorable, and no strongly conflicting " +
   "same-position opponent distribution. Receiving props also require " +
@@ -854,6 +888,7 @@ const CONFIDENCE_METHODOLOGY =
 
 function qualifiesForHighConfidence(candidate: Recommendation): boolean {
   if (candidate.verdict !== "worth_researching") return false;
+  if (!passesReliabilityScreen(candidate)) return false;
   if (headToHeadSignal(candidate).stronglyContradictory) return false;
   if (!candidate.teamMatchVerified || candidate.sampleSize < 4) return false;
   if (candidate.historicalHits !== candidate.sampleSize) return false;
@@ -1153,21 +1188,6 @@ function selectDiverseCandidates(
     selected.push(candidate);
 
     return true;
-  }
-
-  for (const category of CATEGORIES) {
-    const best = ranked.find(
-      (candidate) =>
-        candidate.propType === category &&
-        candidate.historicalHitRate >= 60 &&
-        !seenPlayers.has(
-          normalizeName(candidate.player)
-        )
-    );
-
-    if (best && selected.length < limit) {
-      add(best);
-    }
   }
 
   for (const candidate of ranked) {
@@ -1733,7 +1753,7 @@ async function generateAnalysis(gameId?: string) {
   const excludedForStrongDefensiveMatchup = [...bestByPlayerPropSide.values()].filter(stronglyUnfavorableDefense).length;
 
   const selected = selectDiverseCandidates(
-    [...bestByPlayerPropSide.values()].filter((candidate) => !stronglyUnfavorableDefense(candidate)),
+    [...bestByPlayerPropSide.values()].filter(passesReliabilityScreen),
     MAX_CANDIDATES_FOR_AI
   );
 
@@ -2094,28 +2114,6 @@ Allowed verdicts:
     recommendations.push(recommendation);
 
     return true;
-  }
-
-  for (const category of CATEGORIES) {
-    if (
-      recommendations.length >=
-      MAX_RECOMMENDATIONS
-    ) {
-      break;
-    }
-
-    const best = ranked.find(
-      (item) =>
-        item.propType === category &&
-        item.verdict === "worth_researching" &&
-        !seenPlayers.has(
-          normalizeName(item.player)
-        )
-    );
-
-    if (best) {
-      addRecommendation(best);
-    }
   }
 
   for (const item of ranked) {
