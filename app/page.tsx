@@ -48,6 +48,7 @@ type SportsbookLine = {
 
 type Recommendation = {
   ticker: string;
+  eventId?: string;
   player: string;
   propType: string;
   line: number;
@@ -754,6 +755,10 @@ export default function Home() {
   const [expanded, setExpanded] = useState<string | null>(null);
 
   const [selectedResearchGame, setSelectedResearchGame] = useState("all");
+  const [generationGameId, setGenerationGameId] = useState("all");
+  const [upcomingGames, setUpcomingGames] = useState<Array<{ id: string; homeTeam: string; awayTeam: string; gameTime: string }>>([]);
+  const [gameListLoading, setGameListLoading] = useState(false);
+  const [gameListError, setGameListError] = useState("");
   const [todayChicago, setTodayChicago] = useState("");
 
   const [recommendations, setRecommendations] = useState<
@@ -859,6 +864,25 @@ export default function Home() {
     }
   }, [applyReport]);
 
+  const loadUpcomingGames = useCallback(async () => {
+    if (!adminPassword.trim() || gameListLoading) return;
+    setGameListLoading(true);
+    setGameListError("");
+    try {
+      const response = await fetch("/api/analyze", {
+        headers: { "x-admin-secret": adminPassword },
+        cache: "no-store",
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.error || "Unable to load upcoming games.");
+      setUpcomingGames(Array.isArray(data.games) ? data.games : []);
+    } catch (error) {
+      setGameListError(error instanceof Error ? error.message : "Unable to load games.");
+    } finally {
+      setGameListLoading(false);
+    }
+  }, [adminPassword, gameListLoading]);
+
   const generateResearch = useCallback(async () => {
     if (analysisLoading || !adminPassword.trim()) return;
 
@@ -878,6 +902,7 @@ export default function Home() {
         cache: "no-store",
         body: JSON.stringify({
           action: "analyze",
+          ...(generationGameId === "all" ? {} : { gameId: generationGameId }),
         }),
       });
 
@@ -890,6 +915,14 @@ export default function Home() {
       }
 
       applyReport(data);
+      if (generationGameId !== "all") {
+        const chosen = upcomingGames.find((game) => game.id === generationGameId);
+        if (chosen) {
+          const match = [...(data.recommendations ?? []), ...(data.highConfidenceRecommendations ?? [])]
+            .find((item) => item.eventId === generationGameId);
+          if (match) setSelectedResearchGame(researchGameKey(match));
+        }
+      }
       setShowAdminInput(false);
 
       if (data.published === false) {
@@ -912,7 +945,7 @@ export default function Home() {
       setAdminPassword("");
       setAnalysisLoading(false);
     }
-  }, [analysisLoading, adminPassword, applyReport]);
+  }, [analysisLoading, adminPassword, applyReport, generationGameId, upcomingGames]);
 
   const loadMarkets = useCallback(async () => {
     setLoading(true);
@@ -1060,7 +1093,7 @@ export default function Home() {
             <div>
               <h2 className="text-lg font-bold">Game Research</h2>
               <p className="mt-1 text-xs leading-5 text-[#999]">
-                Filter both research sections by matchup. Uses your existing published report—no new analysis or sportsbook API calls.
+                Filter published picks by matchup. To generate fresh picks for one game, open Generate AI Research below.
               </p>
             </div>
             <button
@@ -1212,6 +1245,33 @@ export default function Home() {
                 new AI research. Your password is not saved in
                 browser storage.
               </p>
+
+              <div className="mb-4 rounded-lg border border-[#353535] bg-[#101010] p-3">
+                <label htmlFor="generation-game" className="mb-2 block text-sm font-semibold">
+                  Generate research for
+                </label>
+                <select id="generation-game" value={generationGameId}
+                  onChange={(event) => setGenerationGameId(event.target.value)}
+                  disabled={analysisLoading}
+                  className="w-full rounded-lg border border-[#444] bg-[#191919] px-3 py-3 text-sm text-white">
+                  <option value="all">All upcoming games (existing behavior)</option>
+                  {upcomingGames.map((game) => (
+                    <option key={game.id} value={game.id}>
+                      {game.awayTeam} @ {game.homeTeam} · {displayDate(game.gameTime)}
+                    </option>
+                  ))}
+                </select>
+                <button type="button" onClick={() => void loadUpcomingGames()}
+                  disabled={gameListLoading || analysisLoading || !adminPassword.trim()}
+                  className="mt-3 rounded-lg border border-[#555] px-3 py-2 text-xs text-white disabled:opacity-50">
+                  {gameListLoading ? "Loading games..." : "Load upcoming games"}
+                </button>
+                <p className="mt-2 text-xs text-[#999]">
+                  Enter your admin password first, then load games. Loading the list makes one Odds API schedule request;
+                  generating research uses additional Odds API and OpenAI requests.
+                </p>
+                {gameListError && <p className="mt-2 text-xs text-red-300">{gameListError}</p>}
+              </div>
 
               <div className="flex flex-col gap-3 sm:flex-row">
                 <input
