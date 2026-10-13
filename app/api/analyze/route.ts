@@ -756,48 +756,59 @@ function stronglyUnfavorableDefense(candidate: Candidate): boolean {
 
 // v9.1: Facts shown to users are constructed from verified numeric inputs,
 // rather than trusting the language model to recount hits or interpret defense.
+// v12.2: concise, source-grounded research notes modeled on analyst prop writeups.
+// Facts are constructed from verified numeric inputs, not invented by the LLM.
 function verifiedRecommendationReason(candidate: Candidate): string {
-  const values = candidate.gameDetails
-    .map((game) => `week ${game.week}: ${round(game.value)}`)
-    .join(", ");
-  const result = `${candidate.historicalHits} of ${candidate.sampleSize}`;
-  const position = candidate.playerPosition;
-  const lead = `${candidate.player} recorded ${candidate.propType.toLowerCase()} of ${values}. ` +
-    `That is ${result} recorded games ${candidate.side.toLowerCase()} the ` +
-    `${candidate.line} ${candidate.bookmaker} main line (${candidate.odds > 0 ? "+" : ""}${candidate.odds}), ` +
-    `with a ${candidate.average} per-game average. `;
+  const { player, side, line, propType, bookmaker, odds } = candidate;
+  const price = `${odds > 0 ? "+" : ""}${odds}`;
+  const values = candidate.gameDetails.map(game => round(game.value)).join(", ");
+  const notes: string[] = [
+    `${player} ${side} ${line} ${propType} (${bookmaker} ${price}).`,
+    `Consistency: ${candidate.historicalHits}/${candidate.sampleSize} recent recorded games cleared today's line; results newest first: ${values}.`,
+  ];
 
-  let matchupText = `Verified ${position}-specific defensive comparison is unavailable; ` +
-    `no favorable or unfavorable defensive matchup is assumed.`;
+  if (candidate.longerTermGames >= 8) {
+    notes.push(`Longer-term: ${candidate.longerTermHits}/${candidate.longerTermGames} available recorded games would have cleared today's line. These were not necessarily the lines offered in those games.`);
+  } else {
+    notes.push(`Longer-term: insufficient recorded games to establish a durable trend.`);
+  }
+
+  const receivingProp = propType === "Receiving Yards" || propType === "Receptions";
+  if (receivingProp) {
+    const targets = candidate.gameDetails.map(game => game.targets);
+    if (targets.every(value => value !== null)) {
+      const counts = targets as number[];
+      const avg = counts.reduce((sum, value) => sum + value, 0) / counts.length;
+      notes.push(`Opportunity: recorded targets newest first ${counts.join(", ")} (${round(avg)} per game). Routes, snaps and current role are not verified.`);
+    } else {
+      notes.push(`Opportunity: complete target data unavailable; routes, snaps and current role are not verified.`);
+    }
+  } else {
+    notes.push(`Opportunity: weekly production is recorded, but current playing time and ${propType === "Passing Yards" ? "passing volume" : "carry volume"} are not independently verified.`);
+  }
+
   const matchup = candidate.positionDefensiveMatchup;
   if (matchup && matchup.gamesPlayed >= 3 && matchup.teamsRanked >= 24) {
-    const metric = propMetric(candidate.propType);
-    const metrics: PositionMetric[] = metric
-      ? [metric]
-      : ["rushingYardsAllowedPerGame", "receivingYardsAllowedPerGame"];
-    const opponent = metrics.reduce((sum, key) => sum + matchup[key], 0);
+    const metric = propMetric(propType);
+    const metrics: PositionMetric[] = metric ? [metric] : ["rushingYardsAllowedPerGame", "receivingYardsAllowedPerGame"];
+    const allowed = metrics.reduce((sum, key) => sum + matchup[key], 0);
     const league = metrics.reduce((sum, key) => sum + matchup.leagueAverage[key], 0);
-    if (Number.isFinite(opponent) && Number.isFinite(league) && league > 0) {
-      const category = candidate.propType.toLowerCase();
-      const tendency = opponent > league
-        ? (candidate.side === "Over" ? "historically more favorable" : "historically less favorable")
-        : opponent < league
-          ? (candidate.side === "Over" ? "historically less favorable" : "historically more favorable")
-          : "roughly neutral";
-      const rankText = metric
-        ? ` Rank ${matchup.mostAllowedRank[metric]} of ${matchup.teamsRanked} (1 allows most).`
-        : " No combined defensive rank is calculated.";
-      matchupText = `${candidate.opponentTeam} allowed ${round(opponent)} ${category} per game ` +
-        `to opposing ${position}s combined across ${matchup.gamesPlayed} games, ` +
-        `versus a ${round(league)} league average. This is ${tendency} for an ${candidate.side}, ` +
-        `based on position-group history, not an individual-player forecast.${rankText}`;
+    if (Number.isFinite(allowed) && Number.isFinite(league) && league > 0) {
+      const favorable = side === "Over" ? allowed > league : allowed < league;
+      notes.push(`Matchup: ${candidate.opponentTeam} allows ${round(allowed)} ${propType.toLowerCase()} per game to ${candidate.playerPosition}s as a group versus ${round(league)} league average (${matchup.gamesPlayed} games). ${favorable ? "Directionally supportive" : "Not directionally supportive"} for the ${side.toLowerCase()}, but group totals do not predict individual production.`);
+    } else {
+      notes.push(`Matchup: verified comparable position-level allowance is unavailable.`);
     }
+  } else {
+    notes.push(`Matchup: sufficient verified ${candidate.playerPosition}-specific defensive data is unavailable.`);
   }
-  const longerTermText = candidate.longerTermGames > 0
-    ? `Longer-term sample: ${candidate.longerTermHits}/${candidate.longerTermGames} recorded games would have hit today's ${candidate.line} line (available previous/current season data; not historic odds). `
-    : "Longer-term sample unavailable; do not assume historical consistency. ";
-  return lead + longerTermText + headToHeadExplanation(candidate) + " " + matchupText + " " + individualOpponentContext(candidate) + " " + opponentDistributionContext(candidate) +
-    " Historical hit rates are not future probabilities; player availability and usage remain unverified.";
+
+  if (candidate.headToHead.length > 0) {
+    const hits = candidate.headToHead.filter(game => historicalHit(headToHeadStat(game, propType), line, side)).length;
+    notes.push(`Previous meetings: ${hits}/${candidate.headToHead.length} recorded games against ${candidate.opponentTeam} would have cleared today's line; small matchup samples are not decisive.`);
+  }
+  notes.push(`Why it stands out: repeatable recorded results and the quoted line passed the research screen; check live availability and role before betting. Historical hits are not predicted probabilities.`);
+  return notes.join("\n");
 }
 
 // v12.1: conservative, evidence-only reliability screen. This does not
@@ -1797,7 +1808,7 @@ async function generateAnalysis(gameId?: string) {
     defensiveLeagueBaselineAvailable: defenseBaselineAvailable,
     defensiveLeagueBaseline: null,
     defensivePositionSpecificEnabled: true,
-    rankingVersion: 11.2,
+    rankingVersion: 12.2,
     headToHeadEnabled: true,
     headToHeadWarnings: headToHeadResult.warnings,
     confidenceMethodology: CONFIDENCE_METHODOLOGY,
@@ -1808,7 +1819,7 @@ async function generateAnalysis(gameId?: string) {
     excludedForStrongDefensiveMatchup,
     recentIndividualOpponentContextEnabled: true,
     rankingDescription:
-      "Historical player evidence, capped position-defense context, sample-gated individual opponent distribution, and cautiously weighted prior player-vs-opponent meetings; not a calibrated probability or expected-value model.",
+      "Concise, verified prop writeups with recent and longer-term consistency, recorded opportunities and position-specific matchups; not a calibrated probability model.",
     defensiveDataWarning: defenseResult.error || null,
     defensiveMatchupsVerified: selected.filter(
       (candidate) => candidate.positionDefensiveMatchup !== null
