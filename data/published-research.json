@@ -12,9 +12,9 @@
   "latestWeek": 5,
   "sportsbookEventsChecked": 15,
   "sportsbookEventsAvailable": 15,
-  "sportsbookMainLinesChecked": 207,
-  "sportsbookAlternateLinesChecked": 1638,
-  "excludedForWeakEvidence": 30,
+  "sportsbookMainLinesChecked": 238,
+  "sportsbookAlternateLinesChecked": 1964,
+  "excludedForWeakEvidence": 34,
   "excludedForTeamMismatch": 0,
   "excludedForAmbiguousPlayer": 0,
   "candidatesReviewed": 5,
@@ -36,7 +36,7 @@
   "headToHeadSelectionEnabled": true,
   "distributionConflicts": 1,
   "individualOpponentDistributionEnabled": true,
-  "excludedForStrongDefensiveMatchup": 5,
+  "excludedForStrongDefensiveMatchup": 6,
   "recentIndividualOpponentContextEnabled": true,
   "rankingDescription": "Historical player evidence, capped position-defense context, sample-gated individual opponent distribution, and cautiously weighted prior player-vs-opponent meetings; not a calibrated probability or expected-value model.",
   "defensiveDataWarning": null,
@@ -67,13 +67,13 @@
       "homeTeam": "Denver Broncos",
       "awayTeam": "Seattle Seahawks",
       "gameTime": "2026-10-16T00:15:00Z",
-      "lastOddsUpdate": "2026-10-12T19:50:52Z",
+      "lastOddsUpdate": "2026-10-13T00:16:23Z",
       "sportsbookLines": [
         {
           "bookmaker": "DraftKings",
           "line": 1.5,
-          "overOdds": -196,
-          "underOdds": 152
+          "overOdds": -189,
+          "underOdds": 147
         },
         {
           "bookmaker": "FanDuel",
@@ -92,7 +92,7 @@
         {
           "bookmaker": "DraftKings",
           "line": 1.5,
-          "overOdds": -200,
+          "overOdds": -193,
           "underOdds": null
         },
         {
@@ -104,7 +104,7 @@
         {
           "bookmaker": "DraftKings",
           "line": 2.5,
-          "overOdds": 151,
+          "overOdds": 155,
           "underOdds": null
         },
         {
@@ -116,7 +116,7 @@
         {
           "bookmaker": "DraftKings",
           "line": 3.5,
-          "overOdds": 396,
+          "overOdds": 406,
           "underOdds": null
         },
         {
@@ -128,7 +128,7 @@
         {
           "bookmaker": "DraftKings",
           "line": 4.5,
-          "overOdds": 920,
+          "overOdds": 960,
           "underOdds": null
         },
         {
@@ -140,7 +140,7 @@
         {
           "bookmaker": "DraftKings",
           "line": 5.5,
-          "overOdds": 1920,
+          "overOdds": 1960,
           "underOdds": null
         },
         {
@@ -1275,7 +1275,7 @@
       "opportunityVerified": true,
       "verdict": "worth_researching",
       "reason": "Rashid Shaheed recorded receptions of week 5: 2, week 4: 1, week 3: 2, week 2: 3, week 1: 1. That is 4 of 5 recorded games under the 2.5 FanDuel main line (-200), with a 1.8 per-game average. Longer-term sample: 11/16 recorded games would have hit today's 2.5 line (available previous/current season data; not historic odds). Player vs. Denver Broncos: no verified previous regular-season meetings found in the available historical dataset; no head-to-head trend is assumed. Denver Broncos allowed 8.4 receptions per game to opposing WRs combined across 5 games, versus a 11.4 league average. This is historically more favorable for an Under, based on position-group history, not an individual-player forecast. Rank 32 of 32 (1 allows most). Recent opposing WR individual results (top performer each week): W5 Marquez Valdes-Scantling 2; W4 Mike Evans 5; W3 Davante Adams 7; W2 Parker Washington 7; W1 Xavier Worthy 3. Across 21 recorded WR player-game results, 14 finished under 2.5; these are not sportsbook outcomes or comparable roles.  Same-position opponent distribution at the proposed 2.5 line: 14 of 21 individual player-games and 5 of 5 weekly top-performer results finished under. No strong negative individual-opponent distribution signal was detected. Opposing players can have different roles and usage; these are descriptive counts, not probabilities. Historical hit rates are not future probabilities; player availability and usage remain unverified.",
-      "risks": "Injuries, snap counts, and current roster status are not verified. The matchup against the Broncos is based on group totals, which may not accurately predict individual outcomes."
+      "risks": "Injuries, snap counts, and other matchup specifics are not verified. The group allowance for receptions is shared among multiple players, which may affect individual outcomes."
     },
     {
       "ticker": "SPORTSBOOK-855f58fad5f0f14b239f4f63df27998b-cooperkupp-Receptions-draftkings-2.5-UNDER",
@@ -1287,7 +1287,7 @@
       "propType": "Receptions",
       "line": 2.5,
       "side": "Under",
-      "odds": -135,
+      "odds": -150,
       "bookmaker": "DraftKings",
       "bookmakerKey": "draftkings",
       "source": "Sportsbook",
@@ -1295,13 +1295,13 @@
       "homeTeam": "Denver Broncos",
       "awayTeam": "Seattle Seahawks",
       "gameTime": "2026-10-16T00:15:00Z",
-      "lastOddsUpdate": "2026-10-12T19:50:49Z",
+      "lastOddsUpdate": "2026-10-13T00:16:35Z",
       "sportsbookLines": [
         {
           "bookmaker": "DraftKings",
           "line": 2.5,
-          "overOdds": 106,
-          "underOdds": -135
+          "overOdds": 117,
+          "underOdds": -150
         },
         {
           "bookmaker": "FanDuel",
@@ -1320,7 +1320,7 @@
         {
           "bookmaker": "DraftKings",
           "line": 1.5,
-          "overOdds": -284,
+          "overOdds": -258,
           "underOdds": null
         },
         {
@@ -1332,7 +1332,7 @@
         {
           "bookmaker": "DraftKings",
           "line": 2.5,
-          "overOdds": 105,
+          "overOdds": 115,
           "underOdds": null
         },
         {
@@ -1344,7 +1344,7 @@
         {
           "bookmaker": "DraftKings",
           "line": 3.5,
-          "overOdds": 260,
+          "overOdds": 292,
           "underOdds": null
         },
         {
@@ -1356,7 +1356,7 @@
         {
           "bookmaker": "DraftKings",
           "line": 4.5,
-          "overOdds": 599,
+          "overOdds": 690,
           "underOdds": null
         },
         {
@@ -1368,7 +1368,7 @@
         {
           "bookmaker": "DraftKings",
           "line": 5.5,
-          "overOdds": 1320,
+          "overOdds": 1500,
           "underOdds": null
         },
         {
@@ -1380,7 +1380,7 @@
         {
           "bookmaker": "DraftKings",
           "line": 6.5,
-          "overOdds": 2500,
+          "overOdds": 2600,
           "underOdds": null
         }
       ],
@@ -2508,8 +2508,8 @@
       "longerTermHitRate": 68.8,
       "opportunityVerified": true,
       "verdict": "worth_researching",
-      "reason": "Cooper Kupp recorded receptions of week 5: 2, week 4: 1, week 3: 4, week 2: 2, week 1: 2. That is 4 of 5 recorded games under the 2.5 DraftKings main line (-135), with a 2.2 per-game average. Longer-term sample: 11/16 recorded games would have hit today's 2.5 line (available previous/current season data; not historic odds). Player vs. Denver Broncos: no verified previous regular-season meetings found in the available historical dataset; no head-to-head trend is assumed. Denver Broncos allowed 8.4 receptions per game to opposing WRs combined across 5 games, versus a 11.4 league average. This is historically more favorable for an Under, based on position-group history, not an individual-player forecast. Rank 32 of 32 (1 allows most). Recent opposing WR individual results (top performer each week): W5 Marquez Valdes-Scantling 2; W4 Mike Evans 5; W3 Davante Adams 7; W2 Parker Washington 7; W1 Xavier Worthy 3. Across 21 recorded WR player-game results, 14 finished under 2.5; these are not sportsbook outcomes or comparable roles.  Same-position opponent distribution at the proposed 2.5 line: 14 of 21 individual player-games and 5 of 5 weekly top-performer results finished under. No strong negative individual-opponent distribution signal was detected. Opposing players can have different roles and usage; these are descriptive counts, not probabilities. Historical hit rates are not future probabilities; player availability and usage remain unverified.",
-      "risks": "Current roster status and injuries are not verified. The Broncos' defensive stats are based on group totals, which may not reflect Kupp's individual performance."
+      "reason": "Cooper Kupp recorded receptions of week 5: 2, week 4: 1, week 3: 4, week 2: 2, week 1: 2. That is 4 of 5 recorded games under the 2.5 DraftKings main line (-150), with a 2.2 per-game average. Longer-term sample: 11/16 recorded games would have hit today's 2.5 line (available previous/current season data; not historic odds). Player vs. Denver Broncos: no verified previous regular-season meetings found in the available historical dataset; no head-to-head trend is assumed. Denver Broncos allowed 8.4 receptions per game to opposing WRs combined across 5 games, versus a 11.4 league average. This is historically more favorable for an Under, based on position-group history, not an individual-player forecast. Rank 32 of 32 (1 allows most). Recent opposing WR individual results (top performer each week): W5 Marquez Valdes-Scantling 2; W4 Mike Evans 5; W3 Davante Adams 7; W2 Parker Washington 7; W1 Xavier Worthy 3. Across 21 recorded WR player-game results, 14 finished under 2.5; these are not sportsbook outcomes or comparable roles.  Same-position opponent distribution at the proposed 2.5 line: 14 of 21 individual player-games and 5 of 5 weekly top-performer results finished under. No strong negative individual-opponent distribution signal was detected. Opposing players can have different roles and usage; these are descriptive counts, not probabilities. Historical hit rates are not future probabilities; player availability and usage remain unverified.",
+      "risks": "Injuries, snap counts, and other matchup specifics are not verified. The group allowance for receptions is shared among multiple players, which may affect individual outcomes."
     },
     {
       "ticker": "SPORTSBOOK-f122527f003276d3bca19efa48c902c1-mikeevans-ReceivingYards-fanduel-77.5-UNDER",
@@ -2529,7 +2529,7 @@
       "homeTeam": "San Francisco 49ers",
       "awayTeam": "Washington Commanders",
       "gameTime": "2026-10-20T00:15:00Z",
-      "lastOddsUpdate": "2026-10-12T19:50:52Z",
+      "lastOddsUpdate": "2026-10-13T00:15:13Z",
       "sportsbookLines": [
         {
           "bookmaker": "FanDuel",
@@ -3682,7 +3682,7 @@
       "opportunityVerified": true,
       "verdict": "worth_researching",
       "reason": "Mike Evans recorded receiving yards of week 5: 113, week 4: 76, week 3: 34, week 2: 54, week 1: 49. That is 4 of 5 recorded games under the 77.5 FanDuel main line (-114), with a 65.2 per-game average. Longer-term sample: 11/13 recorded games would have hit today's 77.5 line (available previous/current season data; not historic odds). Player vs. Washington Commanders history (1 prior regular-season meetings, most recent first): 2024 W1: 61 receiving yards. Average 61; 1 of 1 would have finished under today's 77.5 line. These are historical comparisons to today's line, not the lines offered in those past games. Washington Commanders allowed 164.2 receiving yards per game to opposing WRs combined across 5 games, versus a 150.1 league average. This is historically less favorable for an Under, based on position-group history, not an individual-player forecast. Rank 11 of 32 (1 allows most). Recent opposing WR individual results (top performer each week): W5 Malik Nabers 121; W4 Laquon Treadwell 42; W3 Jaxon Smith-Njigba 128; W2 CeeDee Lamb 153; W1 Dontayvion Wicks 73. Across 24 recorded WR player-game results, 21 finished under 77.5; these are not sportsbook outcomes or comparable roles.  Same-position opponent distribution at the proposed 77.5 line: 21 of 24 individual player-games and 5 of 5 weekly top-performer results finished under. No strong negative individual-opponent distribution signal was detected. Opposing players can have different roles and usage; these are descriptive counts, not probabilities. Historical hit rates are not future probabilities; player availability and usage remain unverified.",
-      "risks": "Injuries and snap counts are not verified. The Commanders' defensive stats are based on group totals, which may not accurately predict Evans' individual performance."
+      "risks": "Injuries, snap counts, and other matchup specifics are not verified. The group allowance for receiving yards is shared among multiple players, which may affect individual outcomes."
     },
     {
       "ticker": "SPORTSBOOK-f122527f003276d3bca19efa48c902c1-rachaadwhite-RushingYards-fanduel-20.5-OVER",
@@ -3702,7 +3702,7 @@
       "homeTeam": "San Francisco 49ers",
       "awayTeam": "Washington Commanders",
       "gameTime": "2026-10-20T00:15:00Z",
-      "lastOddsUpdate": "2026-10-12T19:50:52Z",
+      "lastOddsUpdate": "2026-10-13T00:15:13Z",
       "sportsbookLines": [
         {
           "bookmaker": "FanDuel",
@@ -4830,7 +4830,7 @@
       "opportunityVerified": false,
       "verdict": "worth_researching",
       "reason": "Rachaad White recorded rushing yards of week 5: 18, week 3: 35, week 2: 43, week 1: 22. That is 3 of 4 recorded games over the 20.5 FanDuel main line (-114), with a 29.5 per-game average. Longer-term sample: 12/16 recorded games would have hit today's 20.5 line (available previous/current season data; not historic odds). Player vs. San Francisco 49ers history (3 prior regular-season meetings, most recent first): 2025 W6: 65; 2024 W10: 31; 2023 W11: 30 rushing yards. Average 42; 3 of 3 would have finished over today's 20.5 line. These are historical comparisons to today's line, not the lines offered in those past games. San Francisco 49ers allowed 87 rushing yards per game to opposing RBs combined across 5 games, versus a 91.2 league average. This is historically less favorable for an Over, based on position-group history, not an individual-player forecast. Rank 18 of 32 (1 allows most). Recent opposing RB individual results (top performer each week): W5 Emanuel Wilson 61; W4 J.K. Dobbins 40; W3 Jeremiyah Love 90; W2 De'Von Achane 74; W1 Blake Corum 54. Across 16 recorded RB player-game results, 7 finished over 20.5; these are not sportsbook outcomes or comparable roles.  Same-position opponent distribution at the proposed 20.5 line: 7 of 16 individual player-games and 5 of 5 weekly top-performer results finished over. No strong negative individual-opponent distribution signal was detected. Opposing players can have different roles and usage; these are descriptive counts, not probabilities. Historical hit rates are not future probabilities; player availability and usage remain unverified.",
-      "risks": "Injuries and snap counts are not verified. The 49ers' defensive stats are based on group totals, which may not reflect White's individual performance."
+      "risks": "Injuries, snap counts, and other matchup specifics are not verified. The group allowance for rushing yards is shared among multiple players, which may affect individual outcomes."
     },
     {
       "ticker": "SPORTSBOOK-855f58fad5f0f14b239f4f63df27998b-rjharvey-RushingReceivingYards-fanduel-37.5-OVER",
@@ -4850,13 +4850,13 @@
       "homeTeam": "Denver Broncos",
       "awayTeam": "Seattle Seahawks",
       "gameTime": "2026-10-16T00:15:00Z",
-      "lastOddsUpdate": "2026-10-12T19:50:52Z",
+      "lastOddsUpdate": "2026-10-13T00:16:23Z",
       "sportsbookLines": [
         {
           "bookmaker": "DraftKings",
-          "line": 41.5,
-          "overOdds": -111,
-          "underOdds": -115
+          "line": 42.5,
+          "overOdds": -109,
+          "underOdds": -116
         },
         {
           "bookmaker": "FanDuel",
@@ -4869,67 +4869,67 @@
         {
           "bookmaker": "DraftKings",
           "line": 24.5,
-          "overOdds": -392,
+          "overOdds": -421,
           "underOdds": null
         },
         {
           "bookmaker": "DraftKings",
           "line": 39.5,
-          "overOdds": -125,
+          "overOdds": -136,
           "underOdds": null
         },
         {
           "bookmaker": "DraftKings",
-          "line": 41.5,
-          "overOdds": -110,
+          "line": 42.5,
+          "overOdds": -112,
           "underOdds": null
         },
         {
           "bookmaker": "DraftKings",
           "line": 49.5,
-          "overOdds": 145,
+          "overOdds": 135,
           "underOdds": null
         },
         {
           "bookmaker": "DraftKings",
           "line": 59.5,
-          "overOdds": 244,
+          "overOdds": 230,
           "underOdds": null
         },
         {
           "bookmaker": "DraftKings",
           "line": 69.5,
-          "overOdds": 403,
+          "overOdds": 378,
           "underOdds": null
         },
         {
           "bookmaker": "DraftKings",
           "line": 79.5,
-          "overOdds": 640,
+          "overOdds": 600,
           "underOdds": null
         },
         {
           "bookmaker": "DraftKings",
           "line": 89.5,
-          "overOdds": 990,
+          "overOdds": 930,
           "underOdds": null
         },
         {
           "bookmaker": "DraftKings",
           "line": 99.5,
-          "overOdds": 1480,
+          "overOdds": 1420,
           "underOdds": null
         },
         {
           "bookmaker": "DraftKings",
           "line": 109.5,
-          "overOdds": 2100,
+          "overOdds": 2000,
           "underOdds": null
         },
         {
           "bookmaker": "DraftKings",
           "line": 119.5,
-          "overOdds": 3000,
+          "overOdds": 2900,
           "underOdds": null
         }
       ],
@@ -6008,11 +6008,11 @@
       "opportunityVerified": false,
       "verdict": "worth_researching",
       "reason": "RJ Harvey recorded rushing + receiving yards of week 5: 7, week 4: 93, week 3: 47, week 1: 41. That is 3 of 4 recorded games over the 37.5 FanDuel main line (-115), with a 47 per-game average. Longer-term sample: 11/16 recorded games would have hit today's 37.5 line (available previous/current season data; not historic odds). Player vs. Seattle Seahawks: no verified previous regular-season meetings found in the available historical dataset; no head-to-head trend is assumed. Seattle Seahawks allowed 107.6 rushing + receiving yards per game to opposing RBs combined across 5 games, versus a 120.7 league average. This is historically less favorable for an Over, based on position-group history, not an individual-player forecast. No combined defensive rank is calculated. Recent opposing RB individual results (top performer each week): W5 Christian McCaffrey 83; W4 Keaton Mitchell 63; W3 Jacory Croskey-Merritt 43; W2 Jeremiyah Love 45; W1 Rhamondre Stevenson 95. Across 14 recorded RB player-game results, 7 finished over 37.5; these are not sportsbook outcomes or comparable roles.  Same-position opponent distribution at the proposed 37.5 line: 7 of 14 individual player-games and 5 of 5 weekly top-performer results finished over. No strong negative individual-opponent distribution signal was detected. Opposing players can have different roles and usage; these are descriptive counts, not probabilities. Historical hit rates are not future probabilities; player availability and usage remain unverified.",
-      "risks": "Injuries and snap counts are not verified. The Seahawks' defensive stats are based on group totals, which may not accurately predict Harvey's individual performance."
+      "risks": "Injuries, snap counts, and other matchup specifics are not verified. The group allowance for combined yards is shared among multiple players, which may affect individual outcomes."
     }
   ],
   "highConfidenceRecommendations": [],
   "highConfidenceCount": 0,
-  "updatedAt": "2026-10-12T19:51:14.083Z",
+  "updatedAt": "2026-10-13T00:16:51.215Z",
   "disclaimer": "AI-generated research uses recent historical results and quoted sportsbook prices. Player teams are matched using their latest recorded nflverse team, not live roster status. This is not a validated forecast, expected-value calculation, or guarantee of betting outcomes. Historical position-specific defensive group totals and capped league-relative ranking adjustments are included when available. These are not individual-player projections or predictive. Injuries and current defensive personnel remain unverified. Odds and availability may change."
 }
