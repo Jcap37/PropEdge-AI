@@ -29,7 +29,7 @@ const ODDS_SPORT = "americanfootball_nfl";
 // Analyze a broader upcoming slate. Each event uses an Odds API request.
 const MAX_GAMES_TO_ANALYZE = 16;
 const MAX_CANDIDATES_FOR_AI = 20;
-const MAX_RECOMMENDATIONS = 5;
+const MAX_RECOMMENDATIONS = 8;
 const BOOKMAKERS = "draftkings,fanduel";
 
 // These names correspond to the sportsbook event names.
@@ -815,32 +815,23 @@ function verifiedRecommendationReason(candidate: Candidate): string {
 // verify snaps, routes, injuries or live depth charts; missing information
 // must never be presented as a verified opportunity.
 function passesReliabilityScreen(candidate: Candidate): boolean {
-  if (candidate.sampleSize < 4 || candidate.recentValues.length < 4) return false;
+  if (candidate.sampleSize < 5 || candidate.recentValues.length < 5) return false;
   const recentRate = candidate.historicalHits / candidate.sampleSize;
-  if (recentRate < 0.75) return false;
+  if (recentRate < 0.60) return false;
   // A recent hot streak should not override a materially weaker longer sample.
   if (candidate.longerTermGames >= 10 &&
-      (candidate.longerTermHitRate === null || candidate.longerTermHitRate < 65)) return false;
+      (candidate.longerTermHitRate === null || candidate.longerTermHitRate < 55)) return false;
   if (candidate.longerTermGames >= 8 && candidate.longerTermGames < 10 &&
-      (candidate.longerTermHitRate === null || candidate.longerTermHitRate < 62.5)) return false;
-  const ordered = [...candidate.recentValues].sort((a,b) => a-b);
-  const middle = (ordered[1] + ordered[2]) / 2;
-  if (!historicalHit(middle, candidate.line, candidate.side)) return false;
-  // Do not allow one anomalous performance to carry the mean.
-  const trimmed = ordered.slice(1, -1);
-  const trimmedMean = trimmed.reduce((sum, value) => sum + value, 0) / trimmed.length;
-  if (!historicalHit(trimmedMean, candidate.line, candidate.side)) return false;
+      (candidate.longerTermHitRate === null || candidate.longerTermHitRate < 50)) return false;
   if (candidate.propType === "Receiving Yards" || candidate.propType === "Receptions") {
     const targets = candidate.gameDetails.map(game => game.targets);
     if (targets.some(value => value === null)) return false;
     const counts = targets as number[];
-    // At least three targets in three of four recent games, and no zero-target game.
-    if (counts.filter(value => value >= 3).length < 3 || counts.some(value => value === 0)) return false;
+    // Require recorded target activity in at least three recent games.
+    if (counts.filter(value => value > 0).length < 3) return false;
   }
-  // A highly adverse position matchup is not suitable for the shortlist.
-  if (stronglyUnfavorableDefense(candidate)) return false;
-  if (opponentDistribution(candidate)?.conflicting) return false;
-  if (headToHeadSignal(candidate).stronglyContradictory) return false;
+  // Defensive and head-to-head disagreements are surfaced as risks;
+  // the separate highest-confidence screen remains strict.
   return true;
 }
 
@@ -1799,6 +1790,13 @@ async function generateAnalysis(gameId?: string) {
       mainLines.length,
     sportsbookAlternateLinesChecked:
       alternateLines.length,
+    sportsbookEventsFailed: snapshot.eventsFailed,
+    sportsbookRequestFailures: snapshot.failures,
+    sportsbookDataStatus: snapshot.eventsSucceeded === 0
+      ? "odds_request_failed"
+      : mainLines.length === 0
+        ? "no_usable_main_player_prop_lines"
+        : "main_player_prop_lines_available",
     excludedForWeakEvidence,
     excludedForTeamMismatch,
     excludedForAmbiguousPlayer,
@@ -1834,9 +1832,11 @@ async function generateAnalysis(gameId?: string) {
       recommendations: [] as Recommendation[],
       highConfidenceRecommendations: [] as Recommendation[],
       updatedAt: new Date().toISOString(),
-      message:
-        "No sportsbook props passed the team matching " +
-        "and historical evidence requirements.",
+      message: snapshot.eventsSucceeded === 0
+        ? "Sportsbook odds requests failed; no player props could be evaluated. See sportsbookRequestFailures."
+        : mainLines.length === 0
+          ? "The selected event returned no usable DraftKings/FanDuel main player-prop lines. No players were evaluated; this is not a confidence-filter rejection."
+          : "Sportsbook lines were found, but no players passed identity, team and historical evidence checks.",
       disclaimer:
         "Historical research is not a forecast " +
         "or guarantee of betting outcomes.",
@@ -2135,9 +2135,7 @@ Allowed verdicts:
       break;
     }
 
-    if (
-      item.verdict === "worth_researching"
-    ) {
+    if (item.verdict === "worth_researching" && passesReliabilityScreen(item)) {
       addRecommendation(item);
     }
   }
