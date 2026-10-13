@@ -756,7 +756,7 @@ export default function Home() {
 
   const [selectedResearchGame, setSelectedResearchGame] = useState("all");
   const [generationGameId, setGenerationGameId] = useState("all");
-  const [upcomingGames, setUpcomingGames] = useState<Array<{ id: string; homeTeam: string; awayTeam: string; gameTime: string }>>([]);
+  const [upcomingGames, setUpcomingGames] = useState<Array<{ id: string; homeTeam: string; awayTeam: string; gameTime: string; viewOnly?: boolean }>>([]);
   const [gameListLoading, setGameListLoading] = useState(false);
   const [gameListError, setGameListError] = useState("");
   const [todayChicago, setTodayChicago] = useState("");
@@ -921,6 +921,7 @@ export default function Home() {
           const match = [...(data.recommendations ?? []), ...(data.highConfidenceRecommendations ?? [])]
             .find((item) => item.eventId === generationGameId);
           if (match) setSelectedResearchGame(researchGameKey(match));
+          else setSelectedResearchGame(researchGameKey(chosen as Recommendation));
         }
       }
       setShowAdminInput(false);
@@ -987,6 +988,10 @@ export default function Home() {
 
   const researchGames = useMemo(() => {
     const found = new Map<string, { key: string; label: string; time: string; date: string }>();
+    for (const game of upcomingGames) {
+      const key = researchGameKey({ awayTeam: game.awayTeam, homeTeam: game.homeTeam, gameTime: game.gameTime } as Recommendation);
+      if (key) found.set(key, { key, label: `${game.awayTeam} @ ${game.homeTeam}`, time: game.gameTime, date: chicagoGameDate(game.gameTime) });
+    }
     for (const item of [...highConfidenceRecommendations, ...recommendations]) {
       const key = researchGameKey(item);
       if (!key || found.has(key)) continue;
@@ -1001,7 +1006,7 @@ export default function Home() {
       const ta = Date.parse(a.time), tb = Date.parse(b.time);
       return (Number.isFinite(ta) ? ta : Infinity) - (Number.isFinite(tb) ? tb : Infinity);
     });
-  }, [highConfidenceRecommendations, recommendations]);
+  }, [highConfidenceRecommendations, recommendations, upcomingGames]);
 
   const matchesResearchGame = (item: Recommendation) => {
     if (selectedResearchGame === "all") return true;
@@ -1093,7 +1098,7 @@ export default function Home() {
             <div>
               <h2 className="text-lg font-bold">Game Research</h2>
               <p className="mt-1 text-xs leading-5 text-[#999]">
-                Filter published picks by matchup. To generate fresh picks for one game, open Generate AI Research below.
+                View published picks by matchup. To include games with no picks, enter your admin password below and click Load upcoming games.
               </p>
             </div>
             <button
@@ -1267,7 +1272,7 @@ export default function Home() {
                   {gameListLoading ? "Loading games..." : "Load upcoming games"}
                 </button>
                 <p className="mt-2 text-xs text-[#999]">
-                  Enter your admin password first, then load games. Loading the list makes one Odds API schedule request;
+                  Enter your admin password first, then load games. This also updates the matchup selector above. Loading the list makes one Odds API schedule request;
                   generating research uses additional Odds API and OpenAI requests.
                 </p>
                 {gameListError && <p className="mt-2 text-xs text-red-300">{gameListError}</p>}
