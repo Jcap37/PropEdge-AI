@@ -254,7 +254,7 @@ async function fetchPublishedReport(): Promise<AnalysisResponse> {
 }
 
 // Matchups are derived from the already-published research. No extra API requests.
-function researchGameKey(item: Recommendation): string {
+function researchGameKey(item: { awayTeam?: string; homeTeam?: string; gameTime?: string | null }): string {
   const away = (item.awayTeam ?? "").trim().toLowerCase();
   const home = (item.homeTeam ?? "").trim().toLowerCase();
   if (!away || !home) return "";
@@ -885,6 +885,10 @@ export default function Home() {
 
   const generateResearch = useCallback(async () => {
     if (analysisLoading || !adminPassword.trim()) return;
+    if (generationGameId !== "all" && upcomingGames.find((game) => game.id === generationGameId)?.viewOnly) {
+      setAnalysisError("This game is view-only and cannot be used to generate new research.");
+      return;
+    }
 
     setAnalysisLoading(true);
     setAnalysisError("");
@@ -921,7 +925,7 @@ export default function Home() {
           const match = [...(data.recommendations ?? []), ...(data.highConfidenceRecommendations ?? [])]
             .find((item) => item.eventId === generationGameId);
           if (match) setSelectedResearchGame(researchGameKey(match));
-          else setSelectedResearchGame(researchGameKey(chosen as Recommendation));
+          else setSelectedResearchGame(researchGameKey(chosen));
         }
       }
       setShowAdminInput(false);
@@ -989,7 +993,7 @@ export default function Home() {
   const researchGames = useMemo(() => {
     const found = new Map<string, { key: string; label: string; time: string; date: string }>();
     for (const game of upcomingGames) {
-      const key = researchGameKey({ awayTeam: game.awayTeam, homeTeam: game.homeTeam, gameTime: game.gameTime } as Recommendation);
+      const key = researchGameKey(game);
       if (key) found.set(key, { key, label: `${game.awayTeam} @ ${game.homeTeam}`, time: game.gameTime, date: chicagoGameDate(game.gameTime) });
     }
     for (const item of [...highConfidenceRecommendations, ...recommendations]) {
@@ -1173,7 +1177,7 @@ export default function Home() {
               <p className="mt-2 text-sm leading-6 text-[#999]">
                 The analyzer must explicitly publish a verified high-confidence shortlist.
                 Existing Top AI Player Props are not automatically promoted.
-                Once the v11 analyzer is connected, qualifying picks will appear here.
+                Qualifying picks will appear here when the current analyzer finds sufficient evidence.
               </p>
             </div>
           )}
@@ -1261,8 +1265,8 @@ export default function Home() {
                   className="w-full rounded-lg border border-[#444] bg-[#191919] px-3 py-3 text-sm text-white">
                   <option value="all">All upcoming games (existing behavior)</option>
                   {upcomingGames.map((game) => (
-                    <option key={game.id} value={game.id}>
-                      {game.awayTeam} @ {game.homeTeam} · {displayDate(game.gameTime)}
+                    <option key={game.id} value={game.id} disabled={game.viewOnly}>
+                      {game.awayTeam} @ {game.homeTeam} · {displayDate(game.gameTime)}{game.viewOnly ? " (view only)" : ""}
                     </option>
                   ))}
                 </select>
