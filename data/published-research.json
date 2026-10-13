@@ -1,6 +1,6 @@
 {
-  "researchScope": "all_games",
-  "selectedGameId": null,
+  "researchScope": "merged_game_research",
+  "selectedGameId": "7c312fdf24fb35f58b0e07c2932cc997",
   "success": true,
   "analysisEnabled": true,
   "source": {
@@ -10,44 +10,34 @@
   },
   "season": 2026,
   "latestWeek": 5,
-  "sportsbookEventsChecked": 15,
-  "sportsbookEventsAvailable": 15,
-  "sportsbookMainLinesChecked": 238,
-  "sportsbookAlternateLinesChecked": 1964,
-  "excludedForWeakEvidence": 34,
+  "sportsbookEventsChecked": 1,
+  "sportsbookEventsAvailable": 14,
+  "sportsbookMainLinesChecked": 0,
+  "sportsbookAlternateLinesChecked": 0,
+  "excludedForWeakEvidence": 0,
   "excludedForTeamMismatch": 0,
   "excludedForAmbiguousPlayer": 0,
-  "candidatesReviewed": 5,
-  "candidatesByPropType": {
-    "Receptions": 2,
-    "Receiving Yards": 1,
-    "Rushing Yards": 1,
-    "Rushing + Receiving Yards": 1
-  },
+  "candidatesReviewed": 0,
+  "candidatesByPropType": {},
   "defensiveDataAvailable": true,
   "defensiveLeagueBaselineAvailable": true,
   "defensiveLeagueBaseline": null,
   "defensivePositionSpecificEnabled": true,
-  "rankingVersion": 11.2,
+  "rankingVersion": 12.2,
   "headToHeadEnabled": true,
   "headToHeadWarnings": [],
   "confidenceMethodology": "At least 4 recorded games, 100% historical hits at the quoted main line, plus v12.1 longer-term consistency and target-opportunity screens, a directional average at least 15% beyond that line, verified position-specific defense that is not materially unfavorable, and no strongly conflicting same-position opponent distribution. Receiving props also require consistent recorded targets. At least 3 prior head-to-head meetings with 40% or fewer historical hits at today's line disqualify a high-confidence pick; 0-2 meetings are informational only. These are screening criteria, NOT predicted win probabilities.",
   "highConfidenceCriteriaVersion": 2,
   "headToHeadSelectionEnabled": true,
-  "distributionConflicts": 1,
+  "distributionConflicts": 0,
   "individualOpponentDistributionEnabled": true,
-  "excludedForStrongDefensiveMatchup": 6,
+  "excludedForStrongDefensiveMatchup": 0,
   "recentIndividualOpponentContextEnabled": true,
-  "rankingDescription": "Historical player evidence, capped position-defense context, sample-gated individual opponent distribution, and cautiously weighted prior player-vs-opponent meetings; not a calibrated probability or expected-value model.",
+  "rankingDescription": "Concise, verified prop writeups with recent and longer-term consistency, recorded opportunities and position-specific matchups; not a calibrated probability model.",
   "defensiveDataWarning": null,
-  "defensiveMatchupsVerified": 5,
+  "defensiveMatchupsVerified": 0,
+  "recommendationsByPropType": {},
   "count": 5,
-  "recommendationsByPropType": {
-    "Receptions": 2,
-    "Receiving Yards": 1,
-    "Rushing Yards": 1,
-    "Rushing + Receiving Yards": 1
-  },
   "recommendations": [
     {
       "ticker": "SPORTSBOOK-855f58fad5f0f14b239f4f63df27998b-rashidshaheed-Receptions-fanduel-2.5-UNDER",
@@ -6012,7 +6002,8 @@
     }
   ],
   "highConfidenceRecommendations": [],
-  "highConfidenceCount": 0,
-  "updatedAt": "2026-10-13T00:16:51.215Z",
-  "disclaimer": "AI-generated research uses recent historical results and quoted sportsbook prices. Player teams are matched using their latest recorded nflverse team, not live roster status. This is not a validated forecast, expected-value calculation, or guarantee of betting outcomes. Historical position-specific defensive group totals and capped league-relative ranking adjustments are included when available. These are not individual-player projections or predictive. Injuries and current defensive personnel remain unverified. Odds and availability may change."
+  "updatedAt": "2026-10-13T00:29:53.778Z",
+  "message": "No sportsbook props passed the team matching and historical evidence requirements.",
+  "disclaimer": "Historical research is not a forecast or guarantee of betting outcomes.",
+  "highConfidenceCount": 0
 }
