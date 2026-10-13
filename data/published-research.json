@@ -1,6 +1,6 @@
 {
-  "researchScope": "all_games",
-  "selectedGameId": null,
+  "researchScope": "merged_game_research",
+  "selectedGameId": "7c312fdf24fb35f58b0e07c2932cc997",
   "success": true,
   "analysisEnabled": true,
   "source": {
@@ -10,23 +10,18 @@
   },
   "season": 2026,
   "latestWeek": 5,
-  "sportsbookEventsChecked": 12,
+  "sportsbookEventsChecked": 1,
   "sportsbookEventsAvailable": 12,
-  "sportsbookMainLinesChecked": 145,
-  "sportsbookAlternateLinesChecked": 1159,
+  "sportsbookMainLinesChecked": 0,
+  "sportsbookAlternateLinesChecked": 0,
   "sportsbookEventsFailed": 0,
   "sportsbookRequestFailures": [],
-  "sportsbookDataStatus": "main_player_prop_lines_available",
-  "excludedForWeakEvidence": 18,
+  "sportsbookDataStatus": "no_usable_main_player_prop_lines",
+  "excludedForWeakEvidence": 0,
   "excludedForTeamMismatch": 0,
   "excludedForAmbiguousPlayer": 0,
-  "candidatesReviewed": 9,
-  "candidatesByPropType": {
-    "Rushing Yards": 3,
-    "Receptions": 3,
-    "Rushing + Receiving Yards": 1,
-    "Receiving Yards": 2
-  },
+  "candidatesReviewed": 0,
+  "candidatesByPropType": {},
   "defensiveDataAvailable": true,
   "defensiveLeagueBaselineAvailable": true,
   "defensiveLeagueBaseline": null,
@@ -39,18 +34,13 @@
   "headToHeadSelectionEnabled": true,
   "distributionConflicts": 0,
   "individualOpponentDistributionEnabled": true,
-  "excludedForStrongDefensiveMatchup": 4,
+  "excludedForStrongDefensiveMatchup": 0,
   "recentIndividualOpponentContextEnabled": true,
   "rankingDescription": "Concise, verified prop writeups with recent and longer-term consistency, recorded opportunities and position-specific matchups; not a calibrated probability model.",
   "defensiveDataWarning": null,
-  "defensiveMatchupsVerified": 9,
+  "defensiveMatchupsVerified": 0,
+  "recommendationsByPropType": {},
   "count": 8,
-  "recommendationsByPropType": {
-    "Rushing Yards": 3,
-    "Receptions": 2,
-    "Rushing + Receiving Yards": 1,
-    "Receiving Yards": 2
-  },
   "recommendations": [
     {
       "ticker": "SPORTSBOOK-855f58fad5f0f14b239f4f63df27998b-bonix-RushingYards-draftkings-13.5-UNDER",
@@ -9425,7 +9415,8 @@
     }
   ],
   "highConfidenceRecommendations": [],
-  "highConfidenceCount": 0,
-  "updatedAt": "2026-10-13T00:47:38.657Z",
-  "disclaimer": "AI-generated research uses recent historical results and quoted sportsbook prices. Player teams are matched using their latest recorded nflverse team, not live roster status. This is not a validated forecast, expected-value calculation, or guarantee of betting outcomes. Historical position-specific defensive group totals and capped league-relative ranking adjustments are included when available. These are not individual-player projections or predictive. Injuries and current defensive personnel remain unverified. Odds and availability may change."
+  "updatedAt": "2026-10-13T00:49:15.000Z",
+  "message": "The selected event returned no usable DraftKings/FanDuel main player-prop lines. No players were evaluated; this is not a confidence-filter rejection.",
+  "disclaimer": "Historical research is not a forecast or guarantee of betting outcomes.",
+  "highConfidenceCount": 0
 }
