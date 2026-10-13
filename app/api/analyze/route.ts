@@ -2501,8 +2501,8 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-// Fetches the upcoming NFL schedule only when the administrator requests it.
-// One Odds API events call; no OpenAI request and no per-game prop calls.
+// Schedule lookup: one Odds API events call, plus a free ESPN scoreboard request
+// for today's NFL games. ESPN entries are view-only and never used for analysis.
 export async function GET(request: NextRequest) {
   if (!process.env.ANALYZE_ADMIN_SECRET) {
     return NextResponse.json({ success: false, error: "Admin authentication is not configured." }, { status: 503 });
@@ -2512,10 +2512,48 @@ export async function GET(request: NextRequest) {
   }
   try {
     const events = await oddsRequest<EventData[]>(`/sports/${ODDS_SPORT}/events`);
-    const upcoming = events.filter((event) => Date.parse(event.commence_time) > Date.now())
-      .sort((a, b) => Date.parse(a.commence_time) - Date.parse(b.commence_time));
-    return NextResponse.json({ success: true, games: upcoming.map(({ id, home_team, away_team, commence_time }) =>
-      ({ id, homeTeam: home_team, awayTeam: away_team, gameTime: commence_time })) },
+    const now = Date.now();
+    const games: Array<{ id: string; homeTeam: string; awayTeam: string; gameTime: string; viewOnly?: boolean }> =
+      events.map(({ id, home_team, away_team, commence_time }) => ({
+        id, homeTeam: home_team, awayTeam: away_team, gameTime: commence_time,
+        viewOnly: Date.parse(commence_time) <= now,
+      }));
+
+    // Odds providers often remove games immediately at kickoff. Use ESPN's
+    // public schedule only to keep today's matchups visible for browsing.
+    try {
+      const today = new Intl.DateTimeFormat("en-CA", {
+        timeZone: "America/Chicago", year: "numeric", month: "2-digit", day: "2-digit",
+      }).format(new Date()).replace(/-/g, "");
+      const espnResponse = await fetch(
+        `https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?dates=${today}`,
+        { cache: "no-store", signal: AbortSignal.timeout(6000) }
+      );
+      if (espnResponse.ok) {
+        const scoreboard = await espnResponse.json() as {
+          events?: Array<{ id: string; date: string; competitions?: Array<{
+            competitors?: Array<{ homeAway: string; team?: { displayName?: string } }>
+          }> }>;
+        };
+        const norm = (name: string) => name.toLowerCase().replace(/[^a-z0-9]/g, "");
+        for (const event of scoreboard.events ?? []) {
+          const competitors = event.competitions?.[0]?.competitors ?? [];
+          const home = competitors.find((team) => team.homeAway === "home")?.team?.displayName;
+          const away = competitors.find((team) => team.homeAway === "away")?.team?.displayName;
+          if (!home || !away || !event.date) continue;
+          const alreadyPresent = games.some((game) =>
+            norm(game.homeTeam) === norm(home) && norm(game.awayTeam) === norm(away));
+          if (!alreadyPresent) games.push({
+            id: `schedule-${event.id}`, homeTeam: home, awayTeam: away,
+            gameTime: event.date, viewOnly: true,
+          });
+        }
+      }
+    } catch {
+      // ESPN is optional; never prevent the normal sportsbook schedule loading.
+    }
+    games.sort((a, b) => Date.parse(a.gameTime) - Date.parse(b.gameTime));
+    return NextResponse.json({ success: true, games },
       { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
     return NextResponse.json({ success: false, error: error instanceof Error ? error.message : "Could not load games." }, { status: 500 });
